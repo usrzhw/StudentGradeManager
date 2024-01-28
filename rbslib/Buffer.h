@@ -53,6 +53,8 @@ namespace RbsLib
 		void SetData(const void* data, uint64_t data_size);
 		void SetLength(uint64_t len);
 		void Resize(uint64_t buffer_size);
+		void PushBack(char ch);
+		void AppendToEnd(const IBuffer& buffer);
 		template <typename T> std::vector<T> AsArray(void)
 		{
 			return std::vector<T>(this->data_ptr, (char*)this->data_ptr + this->length);

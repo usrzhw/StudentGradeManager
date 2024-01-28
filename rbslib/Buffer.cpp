@@ -151,3 +151,33 @@ void RbsLib::Buffer::Resize(uint64_t buffer_size)
 	}
 }
 
+void RbsLib::Buffer::PushBack(char ch)
+{
+	if (this->length + 1 <= this->size)
+	{
+		((char*)this->data_ptr)[this->length++] = ch;
+	}
+	else
+	{
+		this->Resize(this->length + 1);
+		((char*)this->data_ptr)[this->length++] = ch;
+	}
+}
+
+void RbsLib::Buffer::AppendToEnd(const IBuffer& buffer)
+{
+	if (this->length + buffer.GetLength() > this->size)
+	{
+		//需要重新分配空间
+		this->Resize(this->length + buffer.GetLength());
+		for (int i = 0; i < buffer.GetLength(); ++i)
+		{
+			((char*)this->data_ptr)[this->length++] = ((const char*)buffer.Data())[i];
+		}
+	}
+	for (int i = 0; i < buffer.GetLength(); ++i)
+	{
+		((char*)this->data_ptr)[this->length++] = ((const char*)buffer.Data())[i];
+	}
+}
+

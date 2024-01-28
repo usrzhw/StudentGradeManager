@@ -2,6 +2,8 @@
 #include <exception>
 #include <string>
 #include <mutex>
+#include <functional>
+#include <map>
 #include "BaseType.h"
 #include "Buffer.h"
 #ifdef WIN32
@@ -20,7 +22,6 @@ typedef int socklen_t;
 #define SOCKET_ERROR SO_ERROR
 typedef int SOCKET;
 #endif
-
 namespace RbsLib
 {
 	namespace Network
@@ -94,6 +95,72 @@ namespace RbsLib
 			{
 			public:
 				static RbsLib::Network::TCP::TCPConnection Connect(std::string ip, int port);
+			};
+		}
+		namespace HTTP
+		{
+			
+			class HTTPServer;
+			class HTTPHeadersContent;
+			class RequestHeader;
+			class Request;
+			class ResponseHeader;
+			class HTTPException;
+			enum class Method
+			{
+				GET,POST
+			};
+			class HTTPException : public std::exception
+			{
+				std::string reason;
+			public:
+				HTTPException(const std::string& reason) noexcept;
+				const char* what(void) const noexcept override;
+			};
+			class HTTPHeadersContent
+			{
+			private:
+				std::map<std::string, std::string> headers;
+			public:
+				void AddHeader(const std::string& key, const std::string& value);
+				void AddHeader(const std::string& line);
+				auto GetHeader(const std::string& key) const->std::string;
+				auto operator[](const std::string& key) const ->std::string ;
+				auto Headers(void)const -> const std::map<std::string, std::string>& ;
+			};
+			class RequestHeader
+			{
+			public:
+				Method request_method;
+				const std::string version = "HTTP/1.1";
+				std::string path="/";
+				HTTPHeadersContent headers;
+				std::string ToString(void) const noexcept;
+				auto ToBuffer(void) const noexcept->RbsLib::Buffer;
+			};
+			class ResponseHeader
+			{
+			public:
+				const std::string version = "HTTP/1.1";
+				int status = 200;
+				std::string status_descraption="ok";
+				HTTPHeadersContent headers;
+				std::string ToString(void) const noexcept;
+				auto ToBuffer(void) const noexcept->RbsLib::Buffer;
+			};
+			class HTTPServer
+			{
+			private:
+				TCP::TCPServer server;
+				std::string protocol_version = "HTTP/1.1";
+				std::function<void(const TCP::TCPConnection& connection,RequestHeader&header)> on_get_request;
+				std::function<void(const TCP::TCPConnection& connection, RequestHeader& header,Buffer&post_content)> on_post_request;
+			public:
+				HTTPServer(const std::string& host = "0.0.0.0", int port = 80);
+				HTTPServer(int port);
+				void LoopWait(void);
+				void SetPostHandle(const std::function<void(const TCP::TCPConnection& connection, RequestHeader& header, Buffer& post_content)>& func);
+				void SetGetHandle(const std::function<void(const TCP::TCPConnection& connection, RequestHeader& header)>& func);
 			};
 		}
 	}

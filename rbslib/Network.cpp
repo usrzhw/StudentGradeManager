@@ -1,6 +1,13 @@
 #include "Network.h"
-
+#include <thread>
+#include <regex>
+#include <sstream>
 namespace net = RbsLib::Network;
+
+static std::string read_word(const char* &buffer, int max_len);
+static std::string read_line(const char* &buffer, int max_len);
+static int move_ptr_to_next_printable(const char*& ptr, int max_len);//返回值指示发生移动的距离，负数表示后方无可移动到的字符
+static bool is_empty_line(const std::string& str);
 
 void RbsLib::Network::init_network()
 {
@@ -325,4 +332,276 @@ RbsLib::Network::TCP::TCPConnection RbsLib::Network::TCP::TCPClient::Connect(std
 	if (SOCKET_ERROR == connect(c_Socket, (struct sockaddr*)&server_addr, sizeof(server_addr)))
 		throw net::NetworkException("Connect server failed");
 	return net::TCP::TCPConnection(c_Socket, server_addr, sizeof(server_addr));
+}
+
+static std::string read_word(const char* &buffer, int max_len)
+{
+	std::string str;
+	bool is_start = false;
+	int i;
+	for (i = 0; i < max_len && buffer[i]; ++i)
+	{
+		if (std::isalnum(buffer[i])||std::ispunct(buffer[i]))
+		{
+			is_start = true;
+			str.push_back(buffer[i]);
+		}
+		else if (is_start) break;
+	}
+	buffer += i;
+	return str;
+}
+
+static std::string read_line(const char* &buffer, int max_len)
+{
+	std::string line;
+	int i;
+	for (i = 0; i < max_len &&buffer[i] && buffer[i] != '\r' && buffer[i] != '\n'; ++i)
+	{
+		line.push_back(buffer[i]);
+	}
+	if (max_len - i >= 2)
+	{
+		if (buffer[i] == '\r' && buffer[i + 1] == '\n') line += "\r\n",i+=2;
+		else if (buffer[i] == '\n') line.push_back('\n'),++i;
+	}
+	else if (max_len - i >= 1)
+	{
+		if (buffer[i] == '\n') line.push_back('\n'),++i;
+		else if (buffer[i] == '\r') line.push_back('\r'),++i;
+	}
+	buffer += i;
+	return line;
+}
+
+int move_ptr_to_next_printable(const char*& ptr, int max_len)
+{
+	int i;
+	for (i = 0; i < max_len && ptr[i]; ++i)
+	{
+		if (std::isalnum(ptr[i])||std::ispunct(ptr[i]))
+		{
+			ptr += i;
+			return i;
+		}
+	}
+	return -1;
+}
+
+bool is_empty_line(const std::string& str)
+{
+	if (str.empty()) return true;
+	else if (str == "\r\n") return true;
+	else if (str == "\n") return true;
+	return false;
+}
+
+RbsLib::Network::HTTP::HTTPServer::HTTPServer(const std::string& host, int port)
+	:server(port, host)
+{
+}
+
+RbsLib::Network::HTTP::HTTPServer::HTTPServer(int port)
+	:server(port, "0.0.0.0")
+{
+}
+
+void RbsLib::Network::HTTP::HTTPServer::LoopWait(void)
+{
+	while (true)
+	{
+		auto connection = this->server.Accept();
+		std::string& protocol_version = this->protocol_version;
+		auto& get = this->on_get_request;
+		auto& post = this->on_post_request;
+		std::thread([connection,protocol_version,get,post]() {
+			//读取Header
+			try
+			{
+				RequestHeader header;
+				const char* p;
+				auto buffer = connection.Recv(1024 * 1024);
+				const char* now_ptr = (const char*)buffer.Data();
+				const char* end_ptr = (const char*)buffer.Data() + buffer.GetLength();
+				//读取协议行
+				std::string line = read_line(now_ptr, end_ptr - now_ptr);
+				if (is_empty_line(line)) return;
+				p = line.c_str();
+				std::string method = read_word(p, line.length());
+				if (method == "GET") header.request_method = Method::GET;
+				else if (method == "POST") header.request_method = Method::POST;
+				else return;
+				header.path = read_word(p, line.c_str() + line.length() - p);
+				if (header.path.empty()) return;//错误的请求，URL为空
+				std::string p_version = read_word(p, line.c_str() + line.length() - p);
+				if (p_version != protocol_version) return;//不支持的版本
+				//循环读取
+				bool is_true_request=false;
+				while (now_ptr < end_ptr)
+				{
+					line = read_line(now_ptr, end_ptr - now_ptr);
+					if (line == "\r\n")
+					{
+						is_true_request = true;
+						break;
+					}
+					try
+					{
+						header.headers.AddHeader(line);
+					}
+					catch (const HTTPException& ex){}
+				}
+				if (is_true_request == false) return;
+				if (header.request_method == Method::POST)
+				{
+					//检查是否具有ContentLength
+					Buffer post_content(end_ptr - now_ptr>0?end_ptr-now_ptr:1);
+					if (!header.headers["Content-Length"].empty())
+					{
+						//存在ContentLength
+						std::string str = header.headers["Content-Length"];
+						int len=0;
+						std::stringstream(str) >> len;
+						if (len > 0) post_content.Resize(len);
+						else post_content.Resize(1);
+						if (end_ptr - now_ptr > 0)
+						{
+							//第一次接收的还有数据
+							if (end_ptr - now_ptr <= len)
+							{
+								post_content.SetData(now_ptr, end_ptr - now_ptr);
+								len -= end_ptr - now_ptr;
+							}
+							else
+							{
+								post_content.SetData(now_ptr, len);
+								len = 0;
+							}
+						}
+						if (len > 0)
+						{
+							auto t = connection.Recv(len);
+							post_content.AppendToEnd(t);
+						}
+					}
+					else
+					{
+						if (end_ptr - now_ptr > 0)
+						{
+							post_content.SetData(now_ptr, end_ptr - now_ptr);
+						}
+					}
+					post(connection, header, post_content);
+				}
+				else if (header.request_method == Method::GET)
+				{
+					get(connection, header);
+				}
+				
+			}
+			catch (const std::exception&ex)
+			{
+				std::string s = ex.what();
+				return;
+			}
+			}).detach();
+	}
+}
+
+void RbsLib::Network::HTTP::HTTPServer::SetPostHandle(const std::function<void(const TCP::TCPConnection& connection, RequestHeader& header, Buffer& post_content)>& func)
+{
+	this->on_post_request = func;
+}
+
+void RbsLib::Network::HTTP::HTTPServer::SetGetHandle(const std::function<void(const TCP::TCPConnection& connection, RequestHeader& header)>& func)
+{
+	this->on_get_request = func;
+}
+
+RbsLib::Network::HTTP::HTTPException::HTTPException(const std::string& reason) noexcept
+	:reason(reason)
+{
+}
+
+const char* RbsLib::Network::HTTP::HTTPException::what(void) const noexcept
+{
+	return this->reason.c_str();
+}
+
+void RbsLib::Network::HTTP::HTTPHeadersContent::AddHeader(const std::string& key, const std::string& value)
+{
+	if (key.empty() || value.empty()) throw HTTPException("Add non key-value to headers content");
+	for (char it: key) if (!std::isprint(it)) throw HTTPException("Add invaild key to headers content");
+	for (char it : value) if (!std::isprint(it)) throw HTTPException("Add invaild value to headers content");
+	this->headers[key] = value;
+}
+
+void RbsLib::Network::HTTP::HTTPHeadersContent::AddHeader(const std::string& line)
+{
+	std::cmatch m;
+	std::regex reg("^\\s*([a-z,A-Z,_,-]+)\\s*:\\s*([^\\f\\n\\r\\t\\v]+)\\s*$");
+	std::regex_match(line.c_str(), m, reg);
+	if (m.size() != 3) throw HTTPException("HTTP Header line parse failed");
+	this->headers[m[1]] = m[2];
+}
+
+auto RbsLib::Network::HTTP::HTTPHeadersContent::GetHeader(const std::string& key) const -> std::string
+{
+	if (this->headers.find(key) == this->headers.end()) return std::string();
+	else return this->headers.find(key)->second;
+}
+
+auto RbsLib::Network::HTTP::HTTPHeadersContent::operator[](const std::string& key)const -> std::string
+{
+	return this->GetHeader(key);
+}
+
+auto RbsLib::Network::HTTP::HTTPHeadersContent::Headers(void)const -> const std::map<std::string, std::string>&
+{
+	return this->headers;
+}
+
+std::string RbsLib::Network::HTTP::RequestHeader::ToString(void) const noexcept
+{
+	std::string str;
+	switch (this->request_method)
+	{
+	default:
+	case Method::GET:
+		str = "GET ";
+		break;
+	case Method::POST:
+		str = "POST ";
+		break;
+	}
+	if (this->path.empty()||this->path[0]!='/') str += "/";
+	str += this->path+' ';
+	str += this->version+"\r\n";
+	for (const auto& it : this->headers.Headers())
+	{
+		str += it.first+": ";
+		str += it.second + "\r\n";
+	}
+	return str + "\r\n";
+}
+
+auto RbsLib::Network::HTTP::RequestHeader::ToBuffer(void) const noexcept -> Buffer
+{
+	return RbsLib::Buffer(this->ToString());
+}
+
+std::string RbsLib::Network::HTTP::ResponseHeader::ToString(void) const noexcept
+{
+	std::string res = this->version + ' ' + std::to_string(this->status) + ' ' + this->status_descraption + "\r\n";
+	for (const auto& it : this->headers.Headers())
+	{
+		res += it.first+": "+it.second+"\r\n";
+	}
+	res += "\r\n";
+	return res;
+}
+
+auto RbsLib::Network::HTTP::ResponseHeader::ToBuffer(void) const noexcept -> RbsLib::Buffer
+{
+	return RbsLib::Buffer(this->ToString());
 }
