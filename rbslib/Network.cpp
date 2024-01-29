@@ -91,7 +91,7 @@ void RbsLib::Network::TCP::TCPServer::Bind(int port, const std::string& address)
 #endif // linux
 
 
-	if (bind(this->server_socket, (struct sockaddr*)&s_sin, sizeof(s_sin)) == SOCKET_ERROR)
+	if (bind(this->server_socket, (struct sockaddr*)&s_sin, sizeof(s_sin)) !=0)
 		throw net::NetworkException("Bind failed");
 	this->is_bind = true;
 
