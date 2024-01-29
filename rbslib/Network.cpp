@@ -518,6 +518,7 @@ void RbsLib::Network::HTTP::HTTPServer::SetGetHandle(const std::function<void(co
 	this->on_get_request = func;
 }
 
+
 RbsLib::Network::HTTP::HTTPException::HTTPException(const std::string& reason) noexcept
 	:reason(reason)
 {
@@ -604,4 +605,9 @@ std::string RbsLib::Network::HTTP::ResponseHeader::ToString(void) const noexcept
 auto RbsLib::Network::HTTP::ResponseHeader::ToBuffer(void) const noexcept -> RbsLib::Buffer
 {
 	return RbsLib::Buffer(this->ToString());
+}
+
+RbsLib::Network::HTTP::Request::Request(const TCP::TCPConnection& connection, const RequestHeader& header, const Buffer& buffer)
+	:connection(connection),header(header),content(buffer)
+{
 }

@@ -148,6 +148,15 @@ namespace RbsLib
 				std::string ToString(void) const noexcept;
 				auto ToBuffer(void) const noexcept->RbsLib::Buffer;
 			};
+			class Request
+			{
+			public:
+				TCP::TCPConnection connection;
+				RequestHeader header;
+				Buffer content;
+				Request(const TCP::TCPConnection& connection,const RequestHeader&header,const Buffer&buffer);
+			};
+			
 			class HTTPServer
 			{
 			private:
