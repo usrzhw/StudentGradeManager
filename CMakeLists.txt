@@ -11,12 +11,23 @@ endif()
 
 project ("StudentGradeManager")
 
-add_compile_options(-std=c++20)
+set(CMAKE_CXX_STANDARD 20)
+add_compile_options(-fPIC)
+
 #定义各个库的标头
 file(GLOB RBS_LIB_HEADERS "rbslib/*.h")
 file(GLOB JSON_LIB_HEADERS "json/*.h")
-file(GLOB MODULE_LOADER_LIB_HEADERS "module_loader")
+file(GLOB MODULE_LOADER_LIB_HEADERS "module_loader/*.h")
+file(GLOB LOG_LIB_HEADERS "log/*.h")
 set(MODULE_SDK_HEADERS "module_sdk/module_sdk.h")
+file (GLOB CONFIG_LIB_HEADERS "configuration_manager/*.h")
+
+#构建日志库
+add_library(logger STATIC ${LOG_LIB_HEADERS} "log/logger.cpp")
+
+#构建配置文件管理器
+add_library(config STATIC ${CONFIG_LIB_HEADERS} "configuration_manager/configuration_manager.cpp" ${RBS_LIB_HEADERS} ${JSON_LIB_HEADERS})
+target_link_libraries(config rbs json)
 
 #构建MODULE_SDK库
 add_library(module_sdk STATIC ${MODULE_SDK_HEADERS} "module_sdk/module_sdk.cpp" ${RBS_LIB_HEADERS})
@@ -35,9 +46,16 @@ file(GLOB MODULE_LOADER_LIB_SRC "module_loader/*.cpp")
 add_library(moduleloader STATIC ${MODULE_LOADER_LIB_SRC} ${MODULE_LOADER_LIB_HEADERS} ${MODULE_SDK_HEADERS} ${RBS_LIB_HEADERS})
 target_link_libraries(moduleloader "dl" rbs module_sdk)
 
+#生成测试模块
+add_library(test_module SHARED ${MODULE_SDK_HEADERS} ${RBS_LIB_HEADERS} "module_sdk/test.cpp")
+target_link_libraries(test_module moduleloader)
+set_target_properties(test_module PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/app)
+
 #生成主程序
-add_executable (StudentGradeManager "StudentGradeManager.cpp" ${RBS_LIB_HEADERS} ${JSON_LIB_HEADERS} ${MODULE_LOADER_LIB_HEADERS})
-target_link_libraries(StudentGradeManager rbs json moduleloader)
+add_executable (StudentGradeManager "StudentGradeManager.cpp" ${LOG_LIB_HEADERS} ${RBS_LIB_HEADERS} ${MODULE_LOADER_LIB_HEADERS})
+target_link_libraries(StudentGradeManager rbs moduleloader logger config)
+
+
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET StudentGradeManager PROPERTY CXX_STANDARD 20)
