@@ -12,17 +12,19 @@ endif()
 project ("StudentGradeManager")
 
 add_compile_options(-std=c++20)
-
+#定义各个库的标头
+file(GLOB RBSLIB_HEADERS "rbslib/*.h")
+file(GLOB JSONLIB_HEADERS "json/*.h")
 #构建RBSLIB库
-file(GLOB RBSLIB_SRC "rbslib/*.cpp" "rbslib/*.h")
-add_library(rbslib ${RBSLIB_SRC})
+file(GLOB RBSLIB_SRC "rbslib/*.cpp")
+add_library(rbslib SHARED ${RBSLIB_SRC} ${RBSLIB_HEADERS})
 
 #构建JSON处理库
-file(GLOB JSONLIB_SRC "json/*.cpp" "json/*.h")
-add_library(json_lib ${JSONLIB_SRC})
+file(GLOB JSONLIB_SRC "json/*.cpp")
+add_library(json_lib SHARED ${JSONLIB_SRC} ${JSONLIB_HEADERS})
 
 #生成主程序
-add_executable (StudentGradeManager "StudentGradeManager.cpp")
+add_executable (StudentGradeManager "StudentGradeManager.cpp" ${RBSLIB_HEADERS} ${JSONLIB_HEADERS})
 target_link_libraries(StudentGradeManager rbslib json_lib)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
