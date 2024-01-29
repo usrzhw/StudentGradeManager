@@ -13,19 +13,31 @@ project ("StudentGradeManager")
 
 add_compile_options(-std=c++20)
 #定义各个库的标头
-file(GLOB RBSLIB_HEADERS "rbslib/*.h")
-file(GLOB JSONLIB_HEADERS "json/*.h")
+file(GLOB RBS_LIB_HEADERS "rbslib/*.h")
+file(GLOB JSON_LIB_HEADERS "json/*.h")
+file(GLOB MODULE_LOADER_LIB_HEADERS "module_loader")
+set(MODULE_SDK_HEADERS "module_sdk/module_sdk.h")
+
+#构建MODULE_SDK库
+add_library(module_sdk STATIC ${MODULE_SDK_HEADERS} "module_sdk/module_sdk.cpp" ${RBS_LIB_HEADERS})
+target_link_libraries(module_sdk rbs)
+
 #构建RBSLIB库
-file(GLOB RBSLIB_SRC "rbslib/*.cpp")
-add_library(rbslib SHARED ${RBSLIB_SRC} ${RBSLIB_HEADERS})
+file(GLOB RBS_LIB_SRC "rbslib/*.cpp")
+add_library(rbs STATIC ${RBS_LIB_SRC} ${RBS_LIB_HEADERS})
 
 #构建JSON处理库
-file(GLOB JSONLIB_SRC "json/*.cpp")
-add_library(json_lib SHARED ${JSONLIB_SRC} ${JSONLIB_HEADERS})
+file(GLOB JSON_LIB_SRC "json/*.cpp")
+add_library(json STATIC ${JSON_LIB_SRC} ${JSON_LIB_HEADERS})
+
+#构建模块加载器库
+file(GLOB MODULE_LOADER_LIB_SRC "module_loader/*.cpp")
+add_library(moduleloader STATIC ${MODULE_LOADER_LIB_SRC} ${MODULE_LOADER_LIB_HEADERS} ${MODULE_SDK_HEADERS} ${RBS_LIB_HEADERS})
+target_link_libraries(moduleloader "dl" rbs module_sdk)
 
 #生成主程序
-add_executable (StudentGradeManager "StudentGradeManager.cpp" ${RBSLIB_HEADERS} ${JSONLIB_HEADERS})
-target_link_libraries(StudentGradeManager rbslib json_lib)
+add_executable (StudentGradeManager "StudentGradeManager.cpp" ${RBS_LIB_HEADERS} ${JSON_LIB_HEADERS} ${MODULE_LOADER_LIB_HEADERS})
+target_link_libraries(StudentGradeManager rbs json moduleloader)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET StudentGradeManager PROPERTY CXX_STANDARD 20)
