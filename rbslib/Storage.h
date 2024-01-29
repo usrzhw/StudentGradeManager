@@ -81,6 +81,8 @@ namespace RbsLib
 			int RemoveAll(void)const;
 			bool CreateDir(const std::string& dir_name)const;
 			bool CreateDirs(const std::string& dir_path)const;
+			std::string GetStem(void)const;
+			std::string GetExtension(void)const;
 			RbsLib::Storage::FilePermission Permission(void)const noexcept;
 			class Iterator
 			{

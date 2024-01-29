@@ -1,4 +1,6 @@
 #include "Storage.h"
+#include "Storage.h"
+#include "Storage.h"
 #include "FileIO.h"
 #ifdef WIN32
 #include <io.h>
@@ -115,6 +117,16 @@ bool RbsLib::Storage::StorageFile::CreateDirs(const std::string& dir_path) const
 	if (this->GetFileType() != RbsLib::Storage::FileType::Dir)
 		throw RbsLib::Storage::StorageException(this->Path() + " not a dir", RbsLib::Storage::StorageException::Reason::FileTypeError);
 	return std::filesystem::create_directories((*this)[dir_path].path);
+}
+
+std::string RbsLib::Storage::StorageFile::GetStem(void) const
+{
+	return std::filesystem::path(this->Path()).stem();
+}
+
+std::string RbsLib::Storage::StorageFile::GetExtension(void) const
+{
+	return std::filesystem::path(this->Path()).extension();
 }
 
 RbsLib::Storage::FilePermission RbsLib::Storage::StorageFile::Permission(void) const noexcept
