@@ -37,7 +37,7 @@ void Module::ModuleManager::LoadModules(const RbsLib::Storage::StorageFile& dir)
 	for (const auto& it : dir)
 	{
 		if (it.GetFileType() == RbsLib::Storage::FileType::FileType::Regular&&
-			it.GetExtension()==".app")
+			it.GetExtension()==".so")
 		{
 			try
 			{
