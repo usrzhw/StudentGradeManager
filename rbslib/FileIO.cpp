@@ -162,11 +162,11 @@ RbsLib::Buffer RbsLib::Storage::FileIO::File::Read(int64_t size) const
 	this->ThrowIfNotOpen();
 	if ((this->open_mode & RbsLib::Storage::FileIO::OpenMode::Read) != RbsLib::Storage::FileIO::OpenMode::Read)
 		throw fio::FileIOException("Not have read permission");
-	char* arr = new char[size];
+	std::unique_ptr<char[]> arr = std::make_unique<char[]>(size);
 	int64_t s;
-	if ((s = fread(arr, 1, size, this->fp)) <= 0)
+	if ((s = fread(arr.get(), 1, size, this->fp)) <= 0)
 		throw RbsLib::Storage::FileIO::FileIOException("Read file failed");
-	RbsLib::Buffer buffer(arr, s);
+	RbsLib::Buffer buffer(arr.get(), s);
 	return buffer;
 }
 
