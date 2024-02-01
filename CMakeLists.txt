@@ -51,9 +51,16 @@ add_library(test_module SHARED ${MODULE_SDK_HEADERS} ${RBS_LIB_HEADERS} "module_
 target_link_libraries(test_module moduleloader)
 set_target_properties(test_module PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/app)
 
+#复制网页等文件
+file(GLOB htmlCopyFiles "html/*.html")
+file(COPY ${htmlCopyFiles} DESTINATION ${CMAKE_BINARY_DIR}/html)
+file(GLOB HTML_FILES "${CMAKE_BINARY_DIR}/html/*.html")
+
 #生成主程序
-add_executable (StudentGradeManager "StudentGradeManager.cpp" ${LOG_LIB_HEADERS} ${RBS_LIB_HEADERS} ${MODULE_LOADER_LIB_HEADERS})
+add_executable(StudentGradeManager  "StudentGradeManager.cpp" ${LOG_LIB_HEADERS} ${RBS_LIB_HEADERS} ${MODULE_LOADER_LIB_HEADERS})
+target_sources(StudentGradeManager PUBLIC ${HTML_FILES})
 target_link_libraries(StudentGradeManager rbs moduleloader logger config)
+
 
 
 
