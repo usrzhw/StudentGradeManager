@@ -1,31 +1,32 @@
-#include "module_sdk.h"
+ï»¿#include "module_sdk.h"
 #include <iostream>
+#include "../rbslib/Buffer.h"
+#include "../rbslib/Storage.h"
+#include "../rbslib/FileIO.h"
 
-//Á½¸öº¯Êý
+//ä¸¤ä¸ªå‡½æ•°
 void func1(const RbsLib::Network::HTTP::Request& request)
 {
-	std::cout << "test" << std::endl;
-	request.connection;//ÕâÊÇTCPÁ¬½Ó£¬Ïò¿Í»§¶Ë·µ»ØÊý¾ÝÒÀÀµ¸ÃÏî
-	request.header;//¿Í»§¶Ë·¢ËÍµÄHTTPÇëÇó±êÍ·
-	request.content;//¿Í»§¶Ë·¢ËÍµÄHTTPÇëÇóÄÚÈÝ(½öPOSTÇëÇóÓÐÐ§)
+	std::cout << "ç™»å½•" << std::endl;	
+	RbsLib::Network::HTTP::ResponseHeader header;
+	header.status = 200;
+	header.status_descraption = "ok";
+	header.headers.AddHeader("Content-Length", "5");
+	request.connection.Send(header.ToBuffer());
+	request.connection.Send("hello", 5);
 }
 void func2(const RbsLib::Network::HTTP::Request& request)
 {
 	std::cout << "test2" << std::endl;
 }
 
-//³õÊ¼»¯º¯Êý£¬ÓÃÓÚÄ£¿é×ÔÉíµÄ³õÊ¼»¯£¬Ö÷ÒªÊÇÃèÊöÄ£¿éÃû³Æ°æ±¾º¯ÊýµÈÐÅÏ¢
+//åˆå§‹åŒ–å‡½æ•°ï¼Œç”¨äºŽæ¨¡å—è‡ªèº«çš„åˆå§‹åŒ–ï¼Œä¸»è¦æ˜¯æè¿°æ¨¡å—åç§°ç‰ˆæœ¬å‡½æ•°ç­‰ä¿¡æ¯
 ModuleSDK::ModuleInfo Init(void)
 {
-	//´´½¨Ä£¿éÐÅÏ¢½á¹¹Ìå£¬²¢·Ö±ðÌîÈëÄ£¿éÃû³Æ¡¢°æ±¾¡¢ÃèÊö
-	ModuleSDK::ModuleInfo info("test", "1.0.0", "²âÊÔ");
-
-	//ÎªÄ£¿éÌí¼ÓÒ»¸öÃû³ÆÎªfuncµÄ·½·¨£¬µ±ÇëÇófunc·½·¨Ê±»áÖ´ÐÐfunc1º¯Êý
-	info.Add("func", func1);
-
-	//ÔÙÌí¼ÓÒ»¸ö·½·¨
-	info.Add("func2", func2);
-
-	//½«Ä£¿éÐÅÏ¢·µ»Ø
-	return info;
+	int a = 10086;
+	RbsLib::Storage::StorageFile b("ID.txt");
+	auto fp = b.Open(RbsLib::Storage::FileIO::OpenMode::Write|RbsLib::Storage::FileIO::OpenMode::Replace,
+		RbsLib::Storage::FileIO::SeekBase::begin);
+	fp.WriteLine(std::to_string(a));
+	return ModuleSDK::ModuleInfo("123", "", "");
 }
