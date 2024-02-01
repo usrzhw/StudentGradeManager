@@ -34,6 +34,7 @@ int main()
 		cout << h.ToString() << endl;
 		});
 	server.SetPostHandle([&module_manager](const RbsLib::Network::TCP::TCPConnection& x, RbsLib::Network::HTTP::RequestHeader& h,const RbsLib::Buffer&buffer) {
+		std::string str = buffer.ToString();
 		std::regex path_reg("^/app/(\\w+).(\\w+)$");
 		std::cmatch m;
 		RbsLib::Network::HTTP::ResponseHeader header;
@@ -62,7 +63,6 @@ int main()
 			x.Send(header.ToBuffer());
 			x.Send(not_found_content);
 		}
-
 		});
 	server.LoopWait();
 	return 0;
