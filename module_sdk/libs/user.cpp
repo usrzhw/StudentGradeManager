@@ -1,13 +1,34 @@
 #include "user.h"
 #include <shared_mutex>
+#include "../../rbslib/Storage.h"
+#include "../../rbslib/FileIO.h"
+#include "../../json/CJsonObject.h"
+
 std::shared_mutex Global_Student_Mutex;//读写学生信息文件时加锁
 std::shared_mutex Global_Teacher_Mutex;//读写教师信息文件时加锁
 std::shared_mutex Global_Classes_Mutex;//读写班级信息文件时加锁
 
-void Account::AccountManager::CreateStudent(std::uint64_t ID, const std::string& name, const std::string& phone_number, const std::string& enrollment_date, const std::string& pass_word, const std::string& class_name, int permission_level)
+void Account::AccountManager::CreateStudent(std::uint64_t ID, const std::string& name, const std::string& phone_number, const std::string& enrollment_date, const std::string& pass_word, const std::string & college, const std::string& class_name, int permission_level)
 {
 	//将学生信息存放在 Students 目录下，以学号命名，如100000.json
-	//该函数只允许直接访问或修改Students 目录下的内容，禁止直接修改其他文件,其他函数同理
+	RbsLib::Storage::StorageFile dir("Students");
+	RbsLib::Storage::StorageFile now_dir(".");
+	if (dir.IsExist() == false) now_dir.CreateDir("Students");
+	if (dir[std::to_string(ID) + ".json"].IsExist()) throw AccountException("Student already exist");
+	auto fp = dir[std::to_string(ID) + ".json"].Open(RbsLib::Storage::FileIO::OpenMode::Write |
+		RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject obj;
+	obj.Add("Name", name);
+	obj.Add("PhoneNumber", phone_number);
+	obj.Add("EnrollmentDate", enrollment_date);
+	obj.AddEmptySubArray("Subjects");
+	obj.Add("College", college);
+	obj.Add("Class", class_name);
+	obj.Add("Password", pass_word);
+	obj.Add("PermissionLevel", permission_level);
+	obj.Add("IsEnable", true);
+	std::string str = obj.ToFormattedString();
+	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
 }
 
 void Account::AccountManager::CreateTeacher(std::uint64_t ID, const std::string& name, const std::string& phone_number, const std::string& pass_word, const std::string& class_name, int permission_level)
@@ -103,4 +124,14 @@ void Account::SubjectManager::RemoveTeacher(std::uint64_t id)
 void Account::SubjectManager::DeleteSubject(std::uint64_t subject_id)
 {
 	//删除课程，只允许删除没有老师没有学生的课程，否则抛出异常
+}
+
+Account::AccountException::AccountException(const std::string& reason) noexcept
+	:reason(reason)
+{
+}
+
+const char* Account::AccountException::what(void) const noexcept
+{
+	return this->reason.c_str();
 }

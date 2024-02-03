@@ -2,8 +2,17 @@
 #include <string>
 #include <cstdint>
 #include <vector>
+#include <exception>
 namespace Account
 {
+	class AccountException : public std::exception
+	{
+	private:
+		std::string reason;
+	public:
+		AccountException(const std::string& reason) noexcept;
+		const char* what(void) const noexcept override;
+	};
 	class AccountManager
 	{
 	public:
@@ -12,8 +21,9 @@ namespace Account
 			const std::string& name,
 			const std::string& phone_number,
 			const std::string& enrollment_date,
-			const std::string& pass_word,
-			const std::string& class_name,
+			const std::string& pass_word, 
+			const std::string & college,
+			const std::string& class_name, 
 			int permission_level
 		);
 		static void CreateTeacher(
@@ -57,17 +67,15 @@ namespace Account
 		static void RemoveTeacher(std::uint64_t id);
 		static void DeleteSubject(std::uint64_t subject_id);
 	};
-	/*
-	class Student
+	class User
 	{
 	private:
 		std::string name;
 		std::uint64_t ID;
 		std::string token;
 	public:
-		Student(const std::string& name, std::uint64_t ID, const std::string& token);
-		Student() = default;
+		User(const std::string& name, std::uint64_t ID, const std::string& token);
+		User() = default;
 
 	};
-	*/
 }
