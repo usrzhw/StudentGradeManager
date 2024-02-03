@@ -1,10 +1,11 @@
 #include <iostream>
+#include <cstdint>
 using namespace std;
 
-namespace Generator
+class Generator
 {
 public:
-	void StudentsIDGenerator();
-	void JobGenerator();
-	void SubjectGenerator();
+	void Id_Generator();
+	void Job_Generator();
+	void Cclass_Generator();
 }

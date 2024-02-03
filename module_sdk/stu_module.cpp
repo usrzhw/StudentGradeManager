@@ -1,8 +1,8 @@
-#include "module_sdk.h"
+ï»¿#include "module_sdk.h"
 #include <iostream>
-#include "libs/account.h"
+#include "libs/user.h"
 
-//Á½¸öº¯Êý
+//ä¸¤ä¸ªå‡½æ•°
 
 void Login(const RbsLib::Network::HTTP::Request& request)
 {
@@ -18,17 +18,17 @@ void Login(const RbsLib::Network::HTTP::Request& request)
 	request.connection.Send(RbsLib::Buffer(json));
 }
 
-//³õÊ¼»¯º¯Êý£¬ÓÃÓÚÄ£¿é×ÔÉíµÄ³õÊ¼»¯£¬Ö÷ÒªÊÇÃèÊöÄ£¿éÃû³Æ°æ±¾º¯ÊýµÈÐÅÏ¢
+//åˆå§‹åŒ–å‡½æ•°ï¼Œç”¨äºŽæ¨¡å—è‡ªèº«çš„åˆå§‹åŒ–ï¼Œä¸»è¦æ˜¯æè¿°æ¨¡å—åç§°ç‰ˆæœ¬å‡½æ•°ç­‰ä¿¡æ¯
 ModuleSDK::ModuleInfo Init(void)
 {
-	//´´½¨Ä£¿éÐÅÏ¢½á¹¹Ìå£¬²¢·Ö±ðÌîÈëÄ£¿éÃû³Æ¡¢°æ±¾¡¢ÃèÊö
-	ModuleSDK::ModuleInfo info("stu", "1.0.0", "Ñ§Éú³É¼¨¹ÜÀíÄ£¿é");
+	//åˆ›å»ºæ¨¡å—ä¿¡æ¯ç»“æž„ä½“ï¼Œå¹¶åˆ†åˆ«å¡«å…¥æ¨¡å—åç§°ã€ç‰ˆæœ¬ã€æè¿°
+	ModuleSDK::ModuleInfo info("stu", "1.0.0", "å­¦ç”Ÿæˆç»©ç®¡ç†æ¨¡å—");
 
-	//ÎªÄ£¿éÌí¼ÓÒ»¸öÃû³ÆÎªfuncµÄ·½·¨£¬µ±ÇëÇófunc·½·¨Ê±»áÖ´ÐÐfunc1º¯Êý
+	//ä¸ºæ¨¡å—æ·»åŠ ä¸€ä¸ªåç§°ä¸ºfuncçš„æ–¹æ³•ï¼Œå½“è¯·æ±‚funcæ–¹æ³•æ—¶ä¼šæ‰§è¡Œfunc1å‡½æ•°
 
-	//ÔÙÌí¼ÓÒ»¸ö·½·¨
+	//å†æ·»åŠ ä¸€ä¸ªæ–¹æ³•
 	info.Add("login", Login);
 
-	//½«Ä£¿éÐÅÏ¢·µ»Ø
+	//å°†æ¨¡å—ä¿¡æ¯è¿”å›ž
 	return info;
 }

@@ -6,10 +6,10 @@
 #include <sstream>
 using namespace std;
 
-void Generator::StudentsIDGenerator()
+std::uint64_t Generator::StudentsIDGenerator()
 {
 	using namespace RbsLib::Storage;
-	static int id = 0;
+	static std::uint64_t id = 0;
 	StorageFile id_fp("StudentsID.txt");
 	if (id == 0)
 	{
@@ -18,18 +18,18 @@ void Generator::StudentsIDGenerator()
 		{
 			std::stringstream(id_fp.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).GetLine(128)) >> id;
 		}
-		if (id <= 0) id = 100000;
+		if (id == 0) id = 100000;
 	}
-	int ret_id = id++;
+	std::uint64_t ret_id = id++;
 	//Ð´»Ø
 	id_fp.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin).WriteLine(std::to_string(id));
 	return ret_id;
 }
 
-void Generator::JobGenerator()
+std::uint64_t Generator::JobGenerator()
 {
 	using namespace RbsLib::Storage;
-	static int id = 0;
+	static std::uint64_t id = 0;
 	StorageFile id_fp("TeachersID.txt");
 	if (id == 0)
 	{
@@ -40,16 +40,16 @@ void Generator::JobGenerator()
 		}
 		if (id <= 0) id = 10000;
 	}
-	int ret_id = id++;
+	std::uint64_t ret_id = id++;
 	//Ð´»Ø
 	id_fp.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin).WriteLine(std::to_string(id));
 	return ret_id;
 }
 
-void Generator::SubjectGenerator()
+std::uint64_t Generator::SubjectGenerator()
 {
 	using namespace RbsLib::Storage;
-	static int id = 0;
+	static std::uint64_t id = 0;
 	StorageFile id_fp("SubjectID.txt");
 	if (id == 0)
 	{
@@ -60,7 +60,7 @@ void Generator::SubjectGenerator()
 		}
 		if (id <= 0) id = 1000000;
 	}
-	int ret_id = id++;
+	std::uint64_t ret_id = id++;
 	//Ð´»Ø
 	id_fp.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin).WriteLine(std::to_string(id));
 	return ret_id;
