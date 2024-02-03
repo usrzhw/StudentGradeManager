@@ -74,3 +74,33 @@ void Account::ClassesManager::DeleteClass(const std::string& class_name)
 {
 	//若班级中不存在学生，则删除班级及其相关信息，若存在学生则抛出异常
 }
+
+void Account::SubjectManager::CreateSubject(std::uint64_t subject_id, const std::string& subject_name, int begin_year, int end_year, const std::string& description)
+{
+	//创建课程，放在Subjects目录中，以课程编号命名，如1000000.json
+}
+
+void Account::SubjectManager::AddStudent(std::uint64_t id)
+{
+	//向课程添加学生
+}
+
+void Account::SubjectManager::AddTeacher(std::uint64_t id)
+{
+	//向课程添加老师
+}
+
+void Account::SubjectManager::RemoveStudent(std::uint64_t id)
+{
+	//从课程移除学生
+}
+
+void Account::SubjectManager::RemoveTeacher(std::uint64_t id)
+{
+	//从课程移除老师
+}
+
+void Account::SubjectManager::DeleteSubject(std::uint64_t subject_id)
+{
+	//删除课程，只允许删除没有老师没有学生的课程，否则抛出异常
+}

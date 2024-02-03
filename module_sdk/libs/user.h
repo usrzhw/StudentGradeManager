@@ -41,6 +41,23 @@ namespace Account
 		static void RemoveStudentFromClass(const std::string& class_name, std::uint64_t student_id);
 		static void DeleteClass(const std::string& class_name);
 	};
+	class SubjectManager
+	{
+	public:
+		static void CreateSubject(
+			std::uint64_t subject_id,
+			const std::string& subject_name,
+			int begin_year,
+			int end_year,
+			const std::string& description
+			);
+		static void AddStudent(std::uint64_t id);
+		static void AddTeacher(std::uint64_t id);
+		static void RemoveStudent(std::uint64_t id);
+		static void RemoveTeacher(std::uint64_t id);
+		static void DeleteSubject(std::uint64_t subject_id);
+	};
+	/*
 	class Student
 	{
 	private:
@@ -52,4 +69,5 @@ namespace Account
 		Student() = default;
 
 	};
+	*/
 }
