@@ -1,8 +1,8 @@
 #include <iostream>
-#include "Generator.h"
+#include "generators.h"
 #include "../../rbslib/FileIO.h"
-#include "../rbslib/Buffer.h"
-#include "../rbslib/Storage.h"
+#include "../../rbslib/Buffer.h"
+#include "../../rbslib/Storage.h"
 #include <sstream>
 using namespace std;
 
@@ -18,7 +18,7 @@ void Generator::StudentsIDGenerator()
 		{
 			std::stringstream(id_fp.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).GetLine(128)) >> id;
 		}
-		if (id <= 0) id = 100000
+		if (id <= 0) id = 100000;
 	}
 	int ret_id = id++;
 	//Ð´»Ø
@@ -38,7 +38,7 @@ void Generator::JobGenerator()
 		{
 			std::stringstream(id_fp.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).GetLine(128)) >> id;
 		}
-		if (id <= 0) id = 10000
+		if (id <= 0) id = 10000;
 	}
 	int ret_id = id++;
 	//Ð´»Ø
@@ -58,7 +58,7 @@ void Generator::SubjectGenerator()
 		{
 			std::stringstream(id_fp.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).GetLine(128)) >> id;
 		}
-		if (id <= 0) id = 1000000
+		if (id <= 0) id = 1000000;
 	}
 	int ret_id = id++;
 	//Ð´»Ø
