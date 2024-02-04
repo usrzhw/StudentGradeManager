@@ -19,6 +19,7 @@ namespace Account
 		static void CreateStudent(
 			std::uint64_t ID,
 			const std::string& name,
+			const std::string& student_sex,
 			const std::string& phone_number,
 			const std::string& enrollment_date,
 			const std::string& pass_word, 
@@ -29,6 +30,7 @@ namespace Account
 		static void CreateTeacher(
 			std::uint64_t ID,
 			const std::string& name,
+			const std::string& teacher_sex,
 			const std::string& phone_number,
 			const std::string& pass_word,
 			const std::string& class_name,
@@ -78,5 +80,5 @@ namespace Account
 		User() = default;
 
 	};
-	*/
+	
 }

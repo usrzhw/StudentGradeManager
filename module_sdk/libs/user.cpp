@@ -8,7 +8,7 @@ std::shared_mutex Global_Student_Mutex;//读写学生信息文件时加锁
 std::shared_mutex Global_Teacher_Mutex;//读写教师信息文件时加锁
 std::shared_mutex Global_Classes_Mutex;//读写班级信息文件时加锁
 
-void Account::AccountManager::CreateStudent(std::uint64_t ID, const std::string& name, const std::string& phone_number, const std::string& enrollment_date, const std::string& pass_word, const std::string & college, const std::string& class_name, int permission_level)
+void Account::AccountManager::CreateStudent(std::uint64_t ID, const std::string& name, const std::string& phone_number,const std::string& student_sex, const std::string& enrollment_date, const std::string& pass_word, const std::string & college, const std::string& class_name, int permission_level)
 {
 	//将学生信息存放在 Students 目录下，以学号命名，如100000.json
 	RbsLib::Storage::StorageFile dir("Students");
@@ -20,6 +20,7 @@ void Account::AccountManager::CreateStudent(std::uint64_t ID, const std::string&
 	neb::CJsonObject obj;
 	obj.Add("Name", name);
 	obj.Add("PhoneNumber", phone_number);
+	obj.Add("Sex", student_sex);
 	obj.Add("EnrollmentDate", enrollment_date);
 	obj.AddEmptySubArray("Subjects");
 	obj.Add("College", college);
@@ -31,14 +32,32 @@ void Account::AccountManager::CreateStudent(std::uint64_t ID, const std::string&
 	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
 }
 
-void Account::AccountManager::CreateTeacher(std::uint64_t ID, const std::string& name, const std::string& phone_number, const std::string& pass_word, const std::string& class_name, int permission_level)
+void Account::AccountManager::CreateTeacher(std::uint64_t ID, const std::string& name, const std::string& phone_number, const std::string& teacher_sex,const std::string& pass_word, const std::string& class_name, int permission_level)
 {
 	//将教师信息存放在 Teachers 目录下，以工号命名，如10000.json
+	RbsLib::Storage::StorageFile dir("Teachers");
+	RbsLib::Storage::StorageFile now_dir(".");
+	if (dir.IsExist() == false) now_dir.CreateDir("Teachers");
+	if (dir[std::to_string(ID) + ".json"].IsExist()) throw AccountException("Teachers already exist");
+	auto fp = dir[std::to_string(ID) + ".json"].Open(RbsLib::Storage::FileIO::OpenMode::Write |
+		RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject obj;
+	obj.Add("Name", name);
+	obj.Add("teacher_sex", teacher_sex);
+	obj.Add("PhoneNumber", phone_number);
+	obj.AddEmptySubArray("Subjects");
+	obj.Add("Class", class_name);
+	obj.Add("Password", pass_word);
+	obj.Add("PermissionLevel", permission_level);
+	obj.Add("IsEnable", true);
+	std::string str = obj.ToFormattedString();
+	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
 }
 
 void Account::AccountManager::AddSubjectToStudent(std::uint64_t student_id, std::uint64_t subject_id)
 {
 	//为某个学生添加课程
+
 }
 
 void Account::AccountManager::AddSubjectToTeacher(std::uint64_t teacher_id, std::uint64_t subject_id)
@@ -79,11 +98,26 @@ void Account::AccountManager::DeleteTeacher(std::uint64_t teacher_id)
 void Account::ClassesManager::CreateClass(const std::string& class_name, std::uint64_t teacherID, int create_year)
 {
 	//将班级信息存储在Classes.json文件中
+	RbsLib::Storage::StorageFile dir("classes.json");
+	RbsLib::Storage::StorageFile now_dir(".");
+	if (dir.IsExist() == false) now_dir.CreateDir("Classes.json");
+	auto fp = dir.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject obj;
+	obj.Add("class_name", class_name);
+	obj.Add("create_year", create_year);
+	obj.AddEmptySubArray("students");
+	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
+	fp.Close();
 }
 
 void Account::ClassesManager::AddStudentToClass(std::uint64_t student_id, const std::string class_name)
 {
-	//添加学生到班级中
+	RbsLib::Storage::StorageFile dir("classes.json");
+	auto fp = dir.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject obj;
+	std::string str = obj.ToFormattedString();
+	int i=json[class_name]["students"].GetArraySize();
+
 }
 
 void Account::ClassesManager::RemoveStudentFromClass(const std::string& class_name, std::uint64_t student_id)
