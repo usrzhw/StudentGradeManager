@@ -37,26 +37,24 @@ namespace Account
 			const std::string& student_sex,
 			const std::string& phone_number,
 			const std::string& enrollment_date,
-			const std::string& pass_word, 
-			const std::string & college,
-			const std::string& class_name, 
+			const std::string& pass_word,
+			const std::string& college,
+			const std::string& class_name,
+			const std::string& notes,
 			int permission_level
 		);
 		static void CreateTeacher(
 			std::uint64_t ID,
-			const std::string& name,
+			const std::string& name, 
 			const std::string& teacher_sex,
 			const std::string& phone_number,
+			const std::string & college,
 			const std::string& pass_word,
-			const std::string& class_name,
+			const std::string & notes, 
 			int permission_level
 		);
-		static void AddSubjectToStudent(std::uint64_t student_id, std::uint64_t subject_id);
-		static void AddSubjectToTeacher(std::uint64_t teacher_id, std::uint64_t subject_id);
-		static void AddClassToTeacher(std::uint64_t teacher_id, std::uint64_t class_name);
-		static void RemoveSubjectFromStudent(std::uint64_t student_id, std::uint64_t subject_id);
-		static void RemoveSubjectFromTeacher(std::uint64_t teacher_id, std::uint64_t subject_id);
-		static void RemoveClassFromTeacher(std::uint64_t teacher_id, std::uint64_t class_name);
+		static bool IsStudentExist(std::uint64_t id);
+		static bool IsTeacherExist(std::uint64_t id);
 		static void DeleteStudent(std::uint64_t student_id);
 		static void DeleteTeacher(std::uint64_t teacher_id);
 		static std::string GetStudentPassword(std::uint64_t id);
@@ -65,10 +63,9 @@ namespace Account
 	class ClassesManager
 	{
 	public:
-		static void CreateClass(const std::string& class_name, std::uint64_t teacherID, int create_year);
-		static void AddStudentToClass(std::uint64_t student_id, const std::string class_name);
-		static void RemoveStudentFromClass(const std::string& class_name, std::uint64_t student_id);
+		static void CreateClass(const std::string& class_name, std::uint64_t teacherID);
 		static void DeleteClass(const std::string& class_name);
+		static bool IsClassExist(const std::string& class_name);
 	};
 	class SubjectManager
 	{
@@ -80,11 +77,12 @@ namespace Account
 			int end_year,
 			const std::string& description
 			);
-		static void AddStudent(std::uint64_t id);
-		static void AddTeacher(std::uint64_t id);
-		static void RemoveStudent(std::uint64_t id);
-		static void RemoveTeacher(std::uint64_t id);
+		static void AddStudent(std::uint64_t student_id, std::uint64_t subject_id, const std::string & notes);
+		static void AddTeacher(std::uint64_t teacher, std::uint64_t subject_id);
+		static void RemoveStudent(std::uint64_t student_id, std::uint64_t subject_id);
+		static void RemoveTeacher(std::uint64_t teacher_id, std::uint64_t subject_id);
 		static void DeleteSubject(std::uint64_t subject_id);
+		static bool IsSubjectExist(std::uint64_t subject_id);
 	};
 	class User
 	{
