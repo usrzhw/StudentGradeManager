@@ -4,6 +4,7 @@
 #include "../../rbslib/Buffer.h"
 #include "../../rbslib/Storage.h"
 #include <sstream>
+
 using namespace std;
 
 std::uint64_t Generator::StudentsIDGenerator()
@@ -18,8 +19,9 @@ std::uint64_t Generator::StudentsIDGenerator()
 		{
 			std::stringstream(id_fp.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).GetLine(128)) >> id;
 		}
-		if (id == 0) id = 100000;
+		if (id == 0) id = STU_ID_START;
 	}
+	if (id < STU_ID_START || id > STU_ID_END) throw GeneratorException("Student ID number great than max limit");
 	std::uint64_t ret_id = id++;
 	//Ð´»Ø
 	id_fp.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin).WriteLine(std::to_string(id));
@@ -38,8 +40,9 @@ std::uint64_t Generator::JobGenerator()
 		{
 			std::stringstream(id_fp.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).GetLine(128)) >> id;
 		}
-		if (id <= 0) id = 10000;
+		if (id <= 0) id = TEACHER_ID_START;
 	}
+	if (id<TEACHER_ID_START || id>TEACHER_ID_END) throw GeneratorException("Teacher ID number great than max limit");
 	std::uint64_t ret_id = id++;
 	//Ð´»Ø
 	id_fp.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin).WriteLine(std::to_string(id));
@@ -58,8 +61,9 @@ std::uint64_t Generator::SubjectGenerator()
 		{
 			std::stringstream(id_fp.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).GetLine(128)) >> id;
 		}
-		if (id <= 0) id = 1000000;
+		if (id <= 0) id = SUBJECT_ID_START;
 	}
+	if (id<SUBJECT_ID_START||id>SUBJECT_ID_END) throw GeneratorException("Subject ID number great than max limit");
 	std::uint64_t ret_id = id++;
 	//Ð´»Ø
 	id_fp.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin).WriteLine(std::to_string(id));

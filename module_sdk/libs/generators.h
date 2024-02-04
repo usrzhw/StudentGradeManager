@@ -2,10 +2,16 @@
 #include <cstdint>
 #include <exception>
 #include <uuid/uuid.h>
-using namespace std;
+
 
 namespace Generator
 {
+	constexpr auto STU_ID_START = (1000000);
+	constexpr auto STU_ID_END = (9999999);
+	constexpr auto TEACHER_ID_START = (100000);
+	constexpr auto TEACHER_ID_END = (999999);
+	constexpr auto SUBJECT_ID_START = (10000000);
+	constexpr auto SUBJECT_ID_END = (99999999);
 	class GeneratorException :std::exception
 	{
 	private:

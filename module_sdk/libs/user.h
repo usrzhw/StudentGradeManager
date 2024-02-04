@@ -3,8 +3,23 @@
 #include <cstdint>
 #include <vector>
 #include <exception>
+#include <vector>
 namespace Account
 {
+	struct StudentBasicInfo
+	{
+		std::uint64_t id;
+		std::string name;
+		std::string sex;
+		std::string phone_number;
+		int enrollment_date;
+		std::string class_name;
+		std::string college;
+		std::string password;
+		int permission_level;
+		std::string notes;
+		bool is_enable;
+	};
 	class AccountException : public std::exception
 	{
 	private:
@@ -42,6 +57,8 @@ namespace Account
 		static void RemoveClassFromTeacher(std::uint64_t teacher_id, std::uint64_t class_name);
 		static void DeleteStudent(std::uint64_t student_id);
 		static void DeleteTeacher(std::uint64_t teacher_id);
+		static std::string GetStudentPassword(std::uint64_t id);
+		static std::string GetTeacherPassword(std::uint64_t id);
 	};
 	class ClassesManager
 	{
