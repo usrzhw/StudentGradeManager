@@ -16,6 +16,8 @@ namespace Account
 	{
 	public:
 		static auto Login(std::uint64_t ID, const std::string& password) -> User;
-
+		static bool CheckToken(std::uint64_t ID, const std::string& token);
+		static auto GetOnlineUserInfo(std::uint64_t ID) -> User;
+		static void Logout(std::uint64_t ID);
 	};
 }

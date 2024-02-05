@@ -20,9 +20,12 @@ namespace Generator
 		GeneratorException(const std::string& reason) noexcept;
 		const char* what(void) const noexcept override;
 	};
-	static std::uint64_t StudentsIDGenerator();
-	static std::uint64_t JobGenerator();
-	static std::uint64_t SubjectGenerator();
+	std::uint64_t StudentsIDGenerator();
+	std::uint64_t TeacherIDGenerator();
+	std::uint64_t SubjectGenerator();
+	bool IsStudentID(std::uint64_t id);
+	bool IsTecherID(std::uint64_t id);
+	bool IsSubjectID(std::uint64_t id);
 	class UUID
 	{
 	private:

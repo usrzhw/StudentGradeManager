@@ -28,7 +28,7 @@ std::uint64_t Generator::StudentsIDGenerator()
 	return ret_id;
 }
 
-std::uint64_t Generator::JobGenerator()
+std::uint64_t Generator::TeacherIDGenerator()
 {
 	using namespace RbsLib::Storage;
 	static std::uint64_t id = 0;
@@ -68,6 +68,21 @@ std::uint64_t Generator::SubjectGenerator()
 	//Ð´»Ø
 	id_fp.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin).WriteLine(std::to_string(id));
 	return ret_id;
+}
+
+bool Generator::IsStudentID(std::uint64_t id)
+{
+	return id >= STU_ID_START && id <= STU_ID_END;
+}
+
+bool Generator::IsTecherID(std::uint64_t id)
+{
+	return id >= TEACHER_ID_START && id <= TEACHER_ID_END;
+}
+
+bool Generator::IsSubjectID(std::uint64_t id)
+{
+	return id >= SUBJECT_ID_START && id <= SUBJECT_ID_END;
 }
 
 Generator::GeneratorException::GeneratorException(const std::string& reason) noexcept

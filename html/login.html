@@ -72,13 +72,13 @@
 
             // 在这里可以添加验证逻辑，例如检查用户名是否为纯数字
 
-            fetch("http://127.0.0.1:8081/app/test.login",
+            fetch("http://127.0.0.1:8081/app/stu.login",
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ id: username, password: password }),
+                    body: JSON.stringify({ Id: username, Password: password }),
                     mode: 'no-cors'
                 }).then(Response => {
                     if (Response.ok == false)
@@ -87,9 +87,16 @@
                         return Response.json();
                     }
                 }).then(json_data => {
-                    if (json_data.message != "ok") throw new Error("登录失败");
+                    if (json_data.message != "ok") throw new Error("登录失败:"+json_data.message);
                     localStorage.setItem("token", json_data.token);
-                    location.href="index.html";
+                    localStorage.setItem("permission", json_data.permission);
+                    localStorage.setItem("id", json_data.id);
+                    if (json_data.permission == 4) {
+                        location.href = "stuindex.html";
+                    }
+                    else if (json_data.permission == 2){
+                        location.href = "tecindex.html";
+                    }
                 }).catch(error => {
                     alert(error);
                 });
