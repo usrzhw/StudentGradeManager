@@ -75,6 +75,10 @@ int main()
 				x.Send(header.ToBuffer());
 				x.Send(not_found_content);
 			}
+			catch (const std::exception& ex)
+			{
+				Logger::LogWarn("模块%s.%s抛出异常:%s", m[1].str().c_str(), m[2].str().c_str(), ex.what());
+			}
 
 		}
 		else
@@ -105,6 +109,10 @@ int main()
 				cout << ex.what() << endl;
 				x.Send(header.ToBuffer());
 				x.Send(not_found_content);
+			}
+			catch (const std::exception& ex)
+			{
+				Logger::LogWarn("模块%s.%s抛出异常:%s", m[1].str().c_str(), m[2].str().c_str(), ex.what());
 			}
 		}
 		else

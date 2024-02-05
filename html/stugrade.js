@@ -21,17 +21,14 @@ window.onload = function () {
         }).then(json_data => {
             classes = json_data;
             for (var it of classes.subjects) {
-                var teachers = "";
-                for (var teacher of it.teachers) {
-                    teachers = teachers + teacher + " ";
-                }
+                if (it.grade == -1) continue;
                 var str = "" +
                     "<tr>" +
                     "<td>" + it.name + "</td>" +
                     "<td>" + it.ID + "</td>" +
-                    "<td>" + it.classroom + "</td>" +
-                    "<td>" + teachers + "</td>" +
                     "<td>" + it.start + "-" + it.end + "</td>" +
+                    "<td>" + it.grade + "</td>" +
+                    "<td>" + it.student_note + "</td>" +
                     "</tr>";
                 document.getElementById("subjects_from_body").innerHTML += str;
             }
@@ -59,20 +56,16 @@ function on_end_year_intput() {
 function search() {
     document.getElementById("subjects_from_body").innerHTML = "";
     for (var it of classes.subjects) {
-        if ((it.start == Number(document.getElementById("start_year").value) &&
+        if (it.grade!=-1&&((it.start == Number(document.getElementById("start_year").value) &&
             it.end == Number(document.getElementById("end_year").value)) ||
-            document.getElementById("end_year").value == "") {
-            var teachers = "";
-            for (var teacher of it.teachers) {
-                teachers = teachers + teacher + " ";
-            }
+            document.getElementById("end_year").value == "")) {
             var str = "" +
                 "<tr>" +
                 "<td>" + it.name + "</td>" +
                 "<td>" + it.ID + "</td>" +
-                "<td>" + it.classroom + "</td>" +
-                "<td>" + teachers + "</td>" +
                 "<td>" + it.start + "-" + it.end + "</td>" +
+                "<td>" + it.grade + "</td>" +
+                "<td>" + it.student_note + "</td>" +
                 "</tr>";
             document.getElementById("subjects_from_body").innerHTML += str;
         }

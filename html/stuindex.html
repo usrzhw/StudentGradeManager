@@ -32,7 +32,7 @@
             margin-left: 20vw;
         }
 
-        li a {
+        li a{
             display: block;
             padding: 2vh;
             text-decoration: none;
@@ -40,9 +40,15 @@
             color: black;
         }
 
-            li a:hover {
-                background-color: rgb(196, 196, 196)
-            }
+        li a:hover {
+            background-color: rgb(196, 196, 196)
+        }
+        li a:active {
+            background-color: rgb(172, 172, 172);
+        }
+        .active {
+            background-color: rgb(211, 211, 211);
+        }
     </style>
     <script src="stuindex.js">
     </script>
@@ -56,12 +62,12 @@
         <div onclick="logout()" style="margin-left: auto;margin-right: 2vw;color: white;">登出</div>
     </div>
     <ul id="MenuList">
-        <li><a href="stusubjects.html" target="MainFrame">我的课程</a></li>
-        <li><a>课程查询</a></li>
-        <li><a>成绩查询</a></li>
-        <li><a>账号管理</a></li>
+        <li><a class="active" onclick="on_item_click(this)">我的课程</a></li>
+        <li><a onclick="on_item_click(this)">课程查询</a></li>
+        <li><a onclick="on_item_click(this)">成绩查询</a></li>
+        <li><a onclick="on_item_click(this)">账号管理</a></li>
     </ul>
-    <iframe name="MainFrame">
+    <iframe id="MainFrame" src="stusubjects.html">
     </iframe>
 </body>
 </html>

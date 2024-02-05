@@ -57,3 +57,20 @@ function logout() {
             jump_to_login();
         });
 }
+
+function on_item_click(e) {
+    var frame = document.getElementById("MainFrame");
+    if (e.text == "我的课程")
+        frame.src = "stusubjects.html";
+    else if (e.text == "课程查询")
+        frame.src = "stusearchsubject.html";
+    else if (e.text == "成绩查询")
+        frame.src = "stugrade.html";
+    var list = document.querySelectorAll("li a");
+    for (var it of list) {
+        if (it.textContent == e.textContent) {
+            it.classList.add("active");
+        }
+        else it.classList.remove("active");
+    }
+}

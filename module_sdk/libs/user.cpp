@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fmt/format.h>
+#include "../../rbslib/String.h"
 #include "../../rbslib/Storage.h"
 #include "../../rbslib/FileIO.h"
 #include "../../json/CJsonObject.h"
@@ -519,6 +520,24 @@ Account::SubjectInfo Account::SubjectManager::GetSubjectInfo(std::uint64_t subje
 		info.students.push_back(grade);
 	}
 	return info;
+}
+
+auto Account::SubjectManager::GetAllSubjectInfo(void) -> std::vector<SubjectInfo>
+{
+	std::shared_lock<std::shared_mutex> lock(Global_Subjects_Mutex);
+	std::vector<SubjectInfo> info_list;
+	RbsLib::Storage::StorageFile dir(SUBJECT_DIR);
+	if (dir.IsExist()&&dir.GetFileType()==RbsLib::Storage::FileType::FileType::Dir)
+	{
+		for (const auto& it : dir)
+		{
+			if (it.GetExtension() == ".json" && it.GetFileType() == RbsLib::Storage::FileType::FileType::Regular)
+			{
+				info_list.push_back(GetSubjectInfo(RbsLib::String::Convert::StringToNumber<std::uint64_t>(it.GetStem())));
+			}
+		}
+	}
+	return info_list;
 }
 
 Account::AccountException::AccountException(const std::string& reason) noexcept

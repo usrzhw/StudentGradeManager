@@ -22,10 +22,6 @@
             align-items: center;
             justify-items: center;
         }
-
-        .input {
-            width: 5vw;
-        }
         table {
             margin-top: 2vh;
             box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
@@ -37,17 +33,16 @@
             padding: 2vh;
             text-align: center;
         }
+
     </style>
-    <script src="stusubjects.js"></script>
+    <script src="stusearchsubject.js"></script>
 </head>
 
 <body>
-    <h1 class="title">我的课程</h1>
+    <h1 class="title">搜索课程</h1>
     <div id="chose_bar">
-        <label style="margin-left: 10vw;margin-right: 2vw;">学年学期:</label>
-        <input class="input" id="start_year" type="number" oninput="on_start_year_input()">
-        <div>-</div>
-        <input class="input" type="number" id="end_year" oninput="on_end_year_intput()">
+        <label style="margin-left: 10vw;margin-right: 2vw;">课程名称或编号:</label>
+        <input id="subject_name" oninput="search()">
         <button style="margin-left: 2vw;" onclick="search()">查询</button>
     </div>
     <div id="from_bar">
@@ -59,6 +54,7 @@
                     <th>授课地点</th>
                     <th>授课教师</th>
                     <th>开课学期</th>
+                    <th>课程描述</th>
                 </tr>
             </thead>
             <tbody id="subjects_from_body">

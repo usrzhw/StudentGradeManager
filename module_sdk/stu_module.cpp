@@ -280,6 +280,45 @@ void GetStudentSubjects(const RbsLib::Network::HTTP::Request& request)
 	return SendSuccessResponse(request.connection, obj);
 }
 
+void GetAllSubjects(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+	{
+		SendError(request.connection, "invailed token", 403);
+		return;
+	}
+	auto list = Account::SubjectManager::GetAllSubjectInfo();
+	obj.Clear();
+	obj.AddEmptySubArray("subjects");
+	for (auto& info : list)
+	{
+		neb::CJsonObject subobj;
+		subobj.Add("name", info.name);
+		subobj.Add("ID", info.id);
+		subobj.Add("classroom", info.classroom);
+		subobj.Add("start", info.semester_start);
+		subobj.Add("end", info.semester_end);
+		subobj.Add("description", info.description);
+		//获取该课程的老师信息
+		subobj.AddEmptySubArray("teachers");
+		for (auto it : info.teachers)
+		{
+			if (Account::AccountManager::IsTeacherExist(it))
+			{
+				auto tinfo = Account::AccountManager::GetTeacherInfo(it);
+				subobj["teachers"].Add(tinfo.name);
+			}
+		}
+		obj["subjects"].Add(subobj);
+	}
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
 
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
 ModuleSDK::ModuleInfo Init(void)
@@ -296,6 +335,7 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("get_user_info", GetUserInfo);
 	info.Add("logout", Logout);
 	info.Add("get_student_subjects", GetStudentSubjects);
+	info.Add("get_all_subjects", GetAllSubjects);
 	//将模块信息返回
 	return info;
 }

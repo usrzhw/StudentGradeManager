@@ -116,6 +116,7 @@ namespace Account
 		static void DeleteSubject(std::uint64_t subject_id);
 		static bool IsSubjectExist(std::uint64_t subject_id);
 		static SubjectInfo GetSubjectInfo(std::uint64_t subject_id);
+		static auto GetAllSubjectInfo(void) -> std::vector<SubjectInfo>;
 		
 	};
 	struct User

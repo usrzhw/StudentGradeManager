@@ -1,6 +1,6 @@
 var classes;
 window.onload = function () {
-    fetch("/app/stu.get_student_subjects",
+    fetch("/app/stu.get_all_subjects",
         {
             method: "POST",
             headers: {
@@ -8,8 +8,7 @@ window.onload = function () {
             },
             body: JSON.stringify({
                 ID: localStorage.getItem("id"),
-                token: localStorage.getItem("token"),
-                target_id: localStorage.getItem("id")
+                token: localStorage.getItem("token")
             }),
             mode: 'no-cors'
         }).then(Response => {
@@ -32,6 +31,7 @@ window.onload = function () {
                     "<td>" + it.classroom + "</td>" +
                     "<td>" + teachers + "</td>" +
                     "<td>" + it.start + "-" + it.end + "</td>" +
+                    "<td>" + it.description + "</td>" +
                     "</tr>";
                 document.getElementById("subjects_from_body").innerHTML += str;
             }
@@ -39,29 +39,12 @@ window.onload = function () {
         });
 }
 
-function on_start_year_input() {
-    var end_input = document.getElementById("end_year");
-    if (document.getElementById("start_year").value != "") {
-        end_input.value = Number(document.getElementById("start_year").value) + 1;
-    }
-    else end_input.value = "";
-    search();
-}
-function on_end_year_intput() {
-    var end_input = document.getElementById("start_year");
-    if (document.getElementById("end_year").value != "") {
-        end_input.value = Number(document.getElementById("end_year").value) - 1;
-    }
-    else end_input.value = "";
-    search();
-}
-
 function search() {
     document.getElementById("subjects_from_body").innerHTML = "";
     for (var it of classes.subjects) {
-        if ((it.start == Number(document.getElementById("start_year").value) &&
-            it.end == Number(document.getElementById("end_year").value)) ||
-            document.getElementById("end_year").value == "") {
+        if (it.ID == Number(document.getElementById("subject_name").value) ||
+            it.name == document.getElementById("subject_name").value||
+            document.getElementById("subject_name").value == "") {
             var teachers = "";
             for (var teacher of it.teachers) {
                 teachers = teachers + teacher + " ";
@@ -73,6 +56,7 @@ function search() {
                 "<td>" + it.classroom + "</td>" +
                 "<td>" + teachers + "</td>" +
                 "<td>" + it.start + "-" + it.end + "</td>" +
+                "<td>" + it.description + "</td>" +
                 "</tr>";
             document.getElementById("subjects_from_body").innerHTML += str;
         }

@@ -38,11 +38,11 @@
             text-align: center;
         }
     </style>
-    <script src="stusubjects.js"></script>
+    <script src="stugrade.js"></script>
 </head>
 
 <body>
-    <h1 class="title">我的课程</h1>
+    <h1 class="title">我的成绩</h1>
     <div id="chose_bar">
         <label style="margin-left: 10vw;margin-right: 2vw;">学年学期:</label>
         <input class="input" id="start_year" type="number" oninput="on_start_year_input()">
@@ -56,9 +56,9 @@
                 <tr>
                     <th>课程名称</th>
                     <th>课程编号</th>
-                    <th>授课地点</th>
-                    <th>授课教师</th>
                     <th>开课学期</th>
+                    <th>成绩</th>
+                    <th>备注</th>
                 </tr>
             </thead>
             <tbody id="subjects_from_body">
