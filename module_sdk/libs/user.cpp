@@ -320,6 +320,43 @@ auto Account::AccountManager::GetTeacherInfo(std::uint64_t id) -> TeacherBasicIn
 	return info;
 }
 
+void Account::AccountManager::SetStudentProperty(const StudentBasicInfo& info)
+{
+	std::shared_lock<std::shared_mutex> lock(Global_Student_Mutex);
+	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", STUDENT_DIR, info.id));
+	neb::CJsonObject obj(file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
+	obj.ReplaceAdd("Name", info.name);
+	obj.ReplaceAdd("PhoneNumber", info.phone_number);
+	obj.ReplaceAdd("Email", info.email);
+	obj.ReplaceAdd("Sex", info.sex);
+	obj.ReplaceAdd("College", info.college);
+	obj.ReplaceAdd("EnrollmentDate", info.enrollment_date);
+	obj.ReplaceAdd("Password", info.password);
+	obj.ReplaceAdd("PermissionLevel", info.permission_level);
+	obj.ReplaceAdd("Notes", info.notes);
+	obj.ReplaceAdd("IsEnable", info.is_enable);
+	file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin)
+		.Write(RbsLib::Buffer(obj.ToFormattedString()));
+}
+
+void Account::AccountManager::SetTeacherProperty(const TeacherBasicInfo& info)
+{
+	std::shared_lock<std::shared_mutex> lock(Global_Teacher_Mutex);
+	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", TEACHER_DIR, info.id));
+	neb::CJsonObject obj(file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
+	obj.ReplaceAdd("Name", info.name);
+	obj.ReplaceAdd("PhoneNumber", info.phone_number);
+	obj.ReplaceAdd("Email", info.email);
+	obj.ReplaceAdd("Sex", info.sex);
+	obj.ReplaceAdd("College", info.college);
+	obj.ReplaceAdd("Password", info.password);
+	obj.ReplaceAdd("PermissionLevel", info.permission_level);
+	obj.ReplaceAdd("Notes", info.notes);
+	obj.ReplaceAdd("IsEnable", info.is_enable);
+	file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin)
+		.Write(RbsLib::Buffer(obj.ToFormattedString()));
+}
+
 void Account::ClassesManager::CreateClass(const std::string& class_name, std::uint64_t teacherID)
 {
 	//将班级信息存储在Classes.json文件中

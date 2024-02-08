@@ -92,6 +92,8 @@ namespace Account
 		static void DeleteTeacher(std::uint64_t teacher_id);
 		static auto GetStudentInfo(std::uint64_t id)-> StudentBasicInfo;
 		static auto GetTeacherInfo(std::uint64_t id) -> TeacherBasicInfo;
+		static void SetStudentProperty(const StudentBasicInfo& info);
+		static void SetTeacherProperty(const TeacherBasicInfo& info);
 	};
 	class ClassesManager
 	{

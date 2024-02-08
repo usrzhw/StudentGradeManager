@@ -24,7 +24,7 @@ namespace Generator
 	std::uint64_t TeacherIDGenerator();
 	std::uint64_t SubjectGenerator();
 	bool IsStudentID(std::uint64_t id);
-	bool IsTecherID(std::uint64_t id);
+	bool IsTeacherID(std::uint64_t id);
 	bool IsSubjectID(std::uint64_t id);
 	class UUID
 	{

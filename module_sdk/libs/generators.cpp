@@ -75,7 +75,7 @@ bool Generator::IsStudentID(std::uint64_t id)
 	return id >= STU_ID_START && id <= STU_ID_END;
 }
 
-bool Generator::IsTecherID(std::uint64_t id)
+bool Generator::IsTeacherID(std::uint64_t id)
 {
 	return id >= TEACHER_ID_START && id <= TEACHER_ID_END;
 }
