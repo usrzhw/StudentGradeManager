@@ -1,0 +1,74 @@
+﻿<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        #Header {
+            position: fixed;
+            height: 15vh;
+            width: 100%;
+            background-color: darkcyan;
+            display: flex;
+            justify-content: left;
+            align-items: center;
+        }
+
+        #MenuList {
+            position: fixed;
+            height: 85vh;
+            background-color: rgb(243, 243, 243);
+            width: 20vw;
+            margin-top: 15vh;
+            padding: 0;
+            list-style-type: none;
+            display: flex;
+            flex-direction: column;
+        }
+
+        iframe {
+            position: fixed;
+            height: 85vh;
+            width: 80vw;
+            margin-top: 15vh;
+            margin-left: 20vw;
+        }
+
+        li a {
+            display: block;
+            padding: 2vh;
+            text-decoration: none;
+            background-color: rgb(233, 233, 233);
+            color: black;
+        }
+
+            li a:hover {
+                background-color: rgb(196, 196, 196)
+            }
+
+            li a:active {
+                background-color: rgb(172, 172, 172);
+            }
+
+        .active {
+            background-color: rgb(211, 211, 211);
+        }
+    </style>
+    <script src="adminindex.js">
+    </script>
+</head>
+
+<body style="margin: 0;">
+    <div id="Header">
+        <div style="margin-left: 50px;font-size: 29px;">学生成绩管理系统</div>
+        <div style="margin-left: 20px;font-size: 20px;color: rgb(78, 78, 78);">Student Grade Manager</div>
+        <div style="margin-left: 20px;font-size: 20px;color: rgb(57, 57, 57);">管理员端</div>
+        <div onclick="logout()" style="margin-left: auto;margin-right: 2vw;color: white;">登出</div>
+    </div>
+    <ul id="MenuList">
+        <li><a class="active" onclick="on_item_click(this)">学生管理</a></li>
+        <li><a onclick="on_item_click(this)">教师管理</a></li>
+        <li><a onclick="on_item_click(this)">账号管理</a></li>
+    </ul>
+    <iframe id="MainFrame" src="adminstu.html">
+    </iframe>
+</body>
+</html>
