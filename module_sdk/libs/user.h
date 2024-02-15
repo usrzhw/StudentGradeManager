@@ -14,13 +14,13 @@ namespace Account
 		std::string sex;
 		std::string phone_number;
 		std::string email;
-		int enrollment_date;
+		std::string enrollment_date;
 		std::string class_name;
 		std::string college;
 		std::string password;
 		int permission_level;
 		std::string notes;
-		bool is_enable;
+		int is_enable;
 		std::vector<std::uint64_t> subjects;
 	};
 	struct TeacherBasicInfo
@@ -36,7 +36,7 @@ namespace Account
 		std::string password;
 		int permission_level;
 		std::string notes;
-		bool is_enable;
+		int is_enable;
 	};
 	struct SubjectInfo
 	{
@@ -54,6 +54,13 @@ namespace Account
 		std::string description;
 		std::vector<std::uint64_t> teachers;
 		std::vector <Student> students;
+	};
+	struct ClassInfo 
+	{
+		std::string name;
+		std::uint64_t teacher_id;
+		std::string create_time;
+		std::vector<std::uint64_t> students;
 	};
 	class AccountException : public std::exception
 	{
@@ -94,6 +101,8 @@ namespace Account
 		static auto GetTeacherInfo(std::uint64_t id) -> TeacherBasicInfo;
 		static void SetStudentProperty(const StudentBasicInfo& info);
 		static void SetTeacherProperty(const TeacherBasicInfo& info);
+		static auto GetAllStudentInfo(void) -> std::vector<StudentBasicInfo>;
+		static auto GetAllTeacherInfo(void) -> std::vector<TeacherBasicInfo>;
 	};
 	class ClassesManager
 	{
@@ -101,6 +110,7 @@ namespace Account
 		static void CreateClass(const std::string& class_name, std::uint64_t teacherID);
 		static void DeleteClass(const std::string& class_name);
 		static bool IsClassExist(const std::string& class_name);
+		static auto GetClassInfo(const std::string& class_name)->ClassInfo;
 	};
 	class SubjectManager
 	{
@@ -119,6 +129,8 @@ namespace Account
 		static bool IsSubjectExist(std::uint64_t subject_id);
 		static SubjectInfo GetSubjectInfo(std::uint64_t subject_id);
 		static auto GetAllSubjectInfo(void) -> std::vector<SubjectInfo>;
+		static void SetStudentProperty(std::uint64_t subject_id,const SubjectInfo::Student& info);
+		static bool IsStudentInSubject(std::uint64_t student_id, std::uint64_t subject_id);
 		
 	};
 	struct User

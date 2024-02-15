@@ -91,10 +91,10 @@
                     localStorage.setItem("token", json_data.token);
                     localStorage.setItem("permission", json_data.permission);
                     localStorage.setItem("id", json_data.id);
-                    if (json_data.permission == 4) {
+                    if (json_data.type == "student") {
                         location.href = "stuindex.html";
                     }
-                    else if (json_data.permission == 2){
+                    else if (json_data.type == "teacher"){
                         location.href = "tecindex.html";
                     }
                 }).catch(error => {

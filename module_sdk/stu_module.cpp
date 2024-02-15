@@ -8,6 +8,7 @@
 #include "../log/logger.h"
 #include "libs/generators.h"
 #include "../rbslib/String.h"
+#include "libs/commandline.h"
 
 static void SendError(const RbsLib::Network::TCP::TCPConnection& connection,
 	const std::string& message, int status)
@@ -62,6 +63,10 @@ static void Login(const RbsLib::Network::HTTP::Request& request)
 		robj.Add("username", user.name);
 		robj.Add("permission", user.permission_level);
 		robj.Add("message", "ok");
+		if (Generator::IsStudentID(id))
+			robj.Add("type", "student");
+		else if (Generator::IsTeacherID(id))
+			robj.Add("type", "teacher");
 		RbsLib::Network::HTTP::ResponseHeader header;
 		header.status = 200;
 		header.status_descraption = "ok";
@@ -121,8 +126,8 @@ static void Logout(const RbsLib::Network::HTTP::Request& request)
 	{
 		auto target_info = Account::AccountManager::GetStudentInfo(target_id);
 		if ((target_info.is_enable == false && basic_info.permission_level == 0) ||
-			(target_info.is_enable == true && target_info.permission_level < basic_info.permission_level ||
-				target_id == ID))
+			(target_info.is_enable && (target_info.permission_level > basic_info.permission_level ||
+				target_info.id == basic_info.ID)))
 		{
 			Account::LoginManager::Logout(target_id);
 			Logger::LogInfo("用户[%d:%s]退出了[%d:%s]账号", ID, basic_info.name.c_str(),
@@ -169,9 +174,9 @@ static void GetUserInfo(const RbsLib::Network::HTTP::Request& request)
 	if (Generator::IsStudentID(target_id))
 	{
 		auto target_info = Account::AccountManager::GetStudentInfo(target_id);
-		if ((target_info.is_enable==false && basic_info.permission_level == 0)||
-			(target_info.is_enable == true && target_info.permission_level < basic_info.permission_level ||
-			target_id == ID))
+		if ((target_info.is_enable == false && basic_info.permission_level == 0) ||
+			(target_info.is_enable && (target_info.permission_level > basic_info.permission_level ||
+				target_info.id == basic_info.ID||basic_info.permission_level == 0)))
 		{
 			obj.Add("type", "student");
 			obj.Add("name", target_info.name);
@@ -193,9 +198,9 @@ static void GetUserInfo(const RbsLib::Network::HTTP::Request& request)
 		auto target_info = Account::AccountManager::GetTeacherInfo(target_id);
 		if ((target_info.is_enable == false && basic_info.permission_level == 0) ||
 			(target_info.is_enable == true && target_info.permission_level < basic_info.permission_level ||
-				target_id == ID))
+				target_id == ID || basic_info.permission_level == 0))
 		{
-			obj.Add("type", "student");
+			obj.Add("type", "Teacher");
 			obj.Add("name", target_info.name);
 			obj.Add("sex", target_info.sex);
 			obj.Add("phone_number", target_info.phone_number);
@@ -234,8 +239,8 @@ static void GetStudentSubjects(const RbsLib::Network::HTTP::Request& request)
 	{
 		auto target_info = Account::AccountManager::GetStudentInfo(target_id);
 		if ((target_info.is_enable == false && basic_info.permission_level == 0) ||
-			(target_info.is_enable == true && target_info.permission_level < basic_info.permission_level ||
-				target_id == ID))
+			(target_info.is_enable&&(target_info.permission_level>basic_info.permission_level||
+				target_info.id == basic_info.ID || basic_info.permission_level == 0)))
 		{
 			obj.AddEmptySubArray("subjects");
 			for (auto it : target_info.subjects)
@@ -348,6 +353,7 @@ static void ChangeName(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的名称修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, old_name.c_str(), info.name.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
 	{
@@ -361,8 +367,10 @@ static void ChangeName(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的名称修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, old_name.c_str(), info.name.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
@@ -393,6 +401,7 @@ static void ChangeSex(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的性别修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(),info.sex.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
 	{
@@ -405,8 +414,10 @@ static void ChangeSex(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的性别修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.sex.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
@@ -432,11 +443,11 @@ static void ChangePhoneNumber(const RbsLib::Network::HTTP::Request& request)
 		if ((basic_info.permission_level == 0 || info.permission_level > basic_info.permission_level && info.is_enable))
 		{
 			info.phone_number = obj("phone_number");
-			if (info.phone_number.empty()) return SendError(request.connection, "性别不可被设置为空", 422);
 			Account::AccountManager::SetStudentProperty(info);
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的电话号码修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.phone_number.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
 	{
@@ -444,13 +455,14 @@ static void ChangePhoneNumber(const RbsLib::Network::HTTP::Request& request)
 		if ((basic_info.permission_level == 0 || info.permission_level > basic_info.permission_level && info.is_enable))
 		{
 			info.phone_number = obj("phone_number");
-			if (info.phone_number.empty()) return SendError(request.connection, "性别不可被设置为空", 422);
 			Account::AccountManager::SetTeacherProperty(info);
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的电话号码修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.phone_number.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
@@ -480,8 +492,10 @@ static void ChangeEnrollmentDate(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的入学时间修改为%d", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.enrollment_date);
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
@@ -511,6 +525,7 @@ static void ChangeCollege(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的学院修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.college.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
 	{
@@ -522,8 +537,10 @@ static void ChangeCollege(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的学院修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.college.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
@@ -556,6 +573,7 @@ static void ChangePassword(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]修改了用户[%d:%s]的密码", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
 	{
@@ -570,8 +588,13 @@ static void ChangePassword(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]修改了用户[%d:%s]的密码", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
-	else return SendError(request.connection, "permission denied", 403);
+	else
+	{
+		return SendError(request.connection, "permission denied", 403);
+	}
+	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
@@ -601,10 +624,12 @@ static void ChangePermissionLevel(const RbsLib::Network::HTTP::Request& request)
 				return SendError(request.connection, "未包含permission_level项", 422);
 			}
 			info.permission_level = RbsLib::String::Convert::StringToNumber<int>(obj("permission_level"));
+			if (info.permission_level < 0 || info.permission_level>4) return SendError(request.connection, "permission_level应在0-4之间", 422);
 			Account::AccountManager::SetStudentProperty(info);
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的权限等级修改为%d", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(),info.permission_level);
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
 	{
@@ -616,12 +641,15 @@ static void ChangePermissionLevel(const RbsLib::Network::HTTP::Request& request)
 				return SendError(request.connection, "未包含permission_level项", 422);
 			}
 			info.permission_level = RbsLib::String::Convert::StringToNumber<int>(obj("permission_level"));
+			if (info.permission_level < 0||info.permission_level>4) return SendError(request.connection, "permission_level应在0-4之间", 422);
 			Account::AccountManager::SetTeacherProperty(info);
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的权限等级修改为%d", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.permission_level);
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
@@ -651,6 +679,7 @@ static void ChangeNotes(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的备注修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.notes.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
 	{
@@ -662,8 +691,232 @@ static void ChangeNotes(const RbsLib::Network::HTTP::Request& request)
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的备注修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.notes.c_str());
 		}
+		else return SendError(request.connection, "permission denied", 403);
 	}
 	else return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void GetTeacherClasses(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+	{
+		SendError(request.connection, "invailed token", 403);
+		return;
+	}
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);
+	target_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("target_id"));
+	if (target_id == 0) return SendError(request.connection, "参数错误", 422);
+	obj.Clear();
+	obj.AddEmptySubArray("classes");
+	if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
+	{
+		auto info = Account::AccountManager::GetTeacherInfo(target_id);
+		if ((basic_info.permission_level == 0 || (target_id==basic_info.ID || info.permission_level > basic_info.permission_level) && info.is_enable))
+		{
+			for (const auto& it : info.classes)
+			{
+				obj["classes"].Add(it);
+			}
+			Logger::LogInfo("用户[%d:%s]获取了教师[%d:%s]所带班级信息", basic_info.ID, basic_info.name.c_str(),
+				info.id, info.name.c_str());
+		}
+		else return SendError(request.connection, "permission denied", 403);
+	}
+	else return SendError(request.connection, "permission denied", 403);
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void GetTeacherSubjects(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+	{
+		SendError(request.connection, "invailed token", 403);
+		return;
+	}
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);
+	target_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("target_id"));
+	if (target_id == 0) return SendError(request.connection, "参数错误", 422);
+	obj.Clear();
+	obj.AddEmptySubArray("subjects");
+	if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
+	{
+		auto info = Account::AccountManager::GetTeacherInfo(target_id);
+		if ((basic_info.permission_level == 0 || (target_id == basic_info.ID || info.permission_level > basic_info.permission_level) && info.is_enable))
+		{
+			for (const auto& it : info.subjects)
+			{
+				neb::CJsonObject subobj;
+				if (Account::SubjectManager::IsSubjectExist(it))
+				{
+					auto subinfo = Account::SubjectManager::GetSubjectInfo(it);
+					subobj.Add("name", subinfo.name);
+					subobj.Add("id", subinfo.id);
+					obj["subjects"].Add(subobj);
+				}
+			}
+			Logger::LogInfo("用户[%d:%s]获取了教师[%d:%s]所带课程信息", basic_info.ID, basic_info.name.c_str(),
+				info.id, info.name.c_str());
+		}
+		else return SendError(request.connection, "permission denied", 403);
+	}
+	else return SendError(request.connection, "permission denied", 403);
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void GetClassesInfo(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);
+	if (false == obj.KeyExist("class_name")) return SendError(request.connection, "参数错误", 422);
+	auto info = Account::ClassesManager::GetClassInfo(obj("class_name"));
+	if (info.teacher_id != basic_info.ID && basic_info.permission_level != 0)
+	{
+		return SendError(request.connection, "permission denied", 403);
+	}
+	obj.Clear();
+	obj.Add("message", "ok");
+	obj.Add("teacher_name", info.name);
+	obj.Add("teacher_id", std::to_string(info.teacher_id));
+	obj.AddEmptySubArray("students");
+	for (auto it : info.students)
+	{
+		neb::CJsonObject subobj;
+		if (Account::AccountManager::IsStudentExist(it))
+		{
+			subobj.Add("id", it);
+			subobj.Add("name", Account::AccountManager::GetStudentInfo(it).name);
+			obj["students"].Add(subobj);
+		}
+	}
+	Logger::LogInfo("用户[%d:%s]获取了班级[%s]的信息", basic_info.ID, basic_info.name.c_str(),
+		info.name.c_str());
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void GetSubjectInfo(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);
+	std::uint64_t subject_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("subject_id"));
+	auto subject_info = Account::SubjectManager::GetSubjectInfo(subject_id);
+	if (std::find(subject_info.teachers.begin(), subject_info.teachers.end(), basic_info.ID) == subject_info.teachers.end() && basic_info.permission_level != 0)
+		return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
+	obj.Add("message", "ok");
+	obj.Add("name", subject_info.name);
+	obj.Add("id", subject_info.id);
+	obj.Add("classroom", subject_info.classroom);
+	obj.Add("start", subject_info.semester_start);
+	obj.Add("end", subject_info.semester_end);
+	obj.Add("description", subject_info.description);
+	obj.AddEmptySubArray("students");
+	for (auto& it : subject_info.students)
+	{
+		neb::CJsonObject subobj;
+		if (Account::AccountManager::IsStudentExist(it.id))
+		{
+			subobj.Add("id", it.id);
+			subobj.Add("name", Account::AccountManager::GetStudentInfo(it.id).name);
+			subobj.Add("grade", it.grade);
+			subobj.Add("notes", it.notes);
+			obj["students"].Add(subobj);
+		}
+	}
+	Logger::LogInfo("用户[%d:%s]获取了课程[%d:%s]的信息", basic_info.ID, basic_info.name.c_str(),
+		subject_info.id, subject_info.name.c_str());
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void SetStudentSubjectGrade(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);
+	std::uint64_t subject_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("subject_id"));
+	if (!Generator::IsSubjectID(subject_id)) return SendError(request.connection, "目标不是课程编号", 422);
+	auto subject_info = Account::SubjectManager::GetSubjectInfo(subject_id);
+	if (std::find(subject_info.teachers.begin(), subject_info.teachers.end(), basic_info.ID) == subject_info.teachers.end() && basic_info.permission_level != 0)
+		return SendError(request.connection, "permission denied", 403);
+	std::uint64_t student_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("student_id"));
+	if (!Generator::IsStudentID(student_id)) return SendError(request.connection, "目标学生ID不是学号", 422);
+	for (auto& it : subject_info.students)
+	{
+		if (it.id == student_id)
+		{
+			Account::SubjectInfo::Student stu;
+			std::stringstream(obj("grade")) >> stu.grade;
+			if (stu.grade>100||stu.grade<-1) return SendError(request.connection, "成绩不合法", 422);
+			stu.notes = it.notes;
+			stu.id = student_id;
+			Account::SubjectManager::SetStudentProperty(subject_id, stu);
+			obj.Clear();
+			obj.Add("message", "ok");
+			Logger::LogInfo("用户[%d:%s]设置了课程[%d:%s]中学生[%d]的成绩为%d", basic_info.ID, basic_info.name.c_str(),
+				subject_info.id,subject_info.name.c_str(), student_id, stu.grade);
+			return SendSuccessResponse(request.connection, obj);
+		}
+	}
+	return SendError(request.connection, "学生不在课程中", 422);
+}
+
+static void GetAllStudentsInfo(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
+	obj.AddEmptySubArray("students");
+	auto list = Account::AccountManager::GetAllStudentInfo();
+	for (auto& info : list)
+	{
+		neb::CJsonObject subobj;
+		subobj.Add("name", info.name);
+		subobj.Add("id", info.id);
+		subobj.Add("class", info.class_name);
+		subobj.Add("sex", info.sex);
+		subobj.Add("notes", info.notes);
+		obj["students"].Add(subobj);
+	}
+	Logger::LogInfo("用户[%d:%s]获取了所有学生信息", basic_info.ID, basic_info.name.c_str());
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
@@ -676,8 +929,6 @@ ModuleSDK::ModuleInfo Init(void)
 	//创建模块信息结构体，并分别填入模块名称、版本、描述
 	ModuleSDK::ModuleInfo info("stu", "1.0.0", "学生成绩管理模块");
 
-	//为模块添加一个名称为func的方法，当请求func方法时会执行func1函数
-
 	//为模块添加所需方法
 	info.Add("login", Login);
 	info.Add("get_user_info", GetUserInfo);
@@ -685,13 +936,19 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("get_student_subjects", GetStudentSubjects);
 	info.Add("get_all_subjects", GetAllSubjects);
 	info.Add("change_name", ChangeName);
-	info.Add("chaneg_sex", ChangeSex);
+	info.Add("change_sex", ChangeSex);
 	info.Add("change_phone_number",ChangePhoneNumber);
 	info.Add("change_enrollment_date", ChangeEnrollmentDate);
 	info.Add("change_college", ChangeCollege);
 	info.Add("change_password", ChangePassword);
 	info.Add("change_permission_level", ChangePermissionLevel);
 	info.Add("change_notes", ChangeNotes);
+	info.Add("get_teacher_classes", GetTeacherClasses);
+	info.Add("get_class_info", GetClassesInfo);
+	info.Add("get_teacher_subjects", GetTeacherSubjects);
+	info.Add("get_subject_info", GetSubjectInfo);
+	info.Add("set_student_subject_grade", SetStudentSubjectGrade);
+	info.Add("get_all_students_info", GetAllStudentsInfo);
 	//将模块信息返回
 	return info;
 }

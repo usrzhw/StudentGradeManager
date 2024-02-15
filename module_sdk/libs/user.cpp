@@ -1,4 +1,4 @@
-#include "user.h"
+ï»¿#include "user.h"
 #include <shared_mutex>
 #include <mutex>
 #include <cstdlib>
@@ -13,10 +13,10 @@ constexpr auto STUDENT_DIR = "Students";
 constexpr auto CLASSES_FILE = "Classes.json";
 constexpr auto TEACHER_DIR = "Teachers";
 constexpr auto SUBJECT_DIR = "Subjects";
-//ÒÔÏÂËøĞèÒªÍ¬Ê±¼ÓËø¶à¸öÊ±°´ÕÕ´ÓÉÏµ½ÏÂµÄË³Ğò¼ÓËø·ÀÖ¹ËÀËø
-std::shared_mutex Global_Student_Mutex;//¶ÁĞ´Ñ§ÉúĞÅÏ¢ÎÄ¼şÊ±¼ÓËø
-std::shared_mutex Global_Teacher_Mutex;//¶ÁĞ´½ÌÊ¦ĞÅÏ¢ÎÄ¼şÊ±¼ÓËø 
-std::shared_mutex Global_Classes_Mutex;//¶ÁĞ´°à¼¶ĞÅÏ¢ÎÄ¼şÊ±¼ÓËø
+//ä»¥ä¸‹é”éœ€è¦åŒæ—¶åŠ é”å¤šä¸ªæ—¶æŒ‰ç…§ä»ä¸Šåˆ°ä¸‹çš„é¡ºåºåŠ é”é˜²æ­¢æ­»é”
+std::shared_mutex Global_Student_Mutex;//è¯»å†™å­¦ç”Ÿä¿¡æ¯æ–‡ä»¶æ—¶åŠ é”
+std::shared_mutex Global_Teacher_Mutex;//è¯»å†™æ•™å¸ˆä¿¡æ¯æ–‡ä»¶æ—¶åŠ é” 
+std::shared_mutex Global_Classes_Mutex;//è¯»å†™ç­çº§ä¿¡æ¯æ–‡ä»¶æ—¶åŠ é”
 std::shared_mutex Global_Subjects_Mutex;
 
 static inline void CreateDefaultClassesFile(void)
@@ -143,7 +143,7 @@ void Account::AccountManager::CreateStudent(
 	const std::string& class_name,
 	const std::string& notes, int permission_level)
 {
-	//½«Ñ§ÉúĞÅÏ¢´æ·ÅÔÚ Students Ä¿Â¼ÏÂ£¬ÒÔÑ§ºÅÃüÃû£¬Èç100000.json
+	//å°†å­¦ç”Ÿä¿¡æ¯å­˜æ”¾åœ¨ Students ç›®å½•ä¸‹ï¼Œä»¥å­¦å·å‘½åï¼Œå¦‚100000.json
 	std::unique_lock<std::shared_mutex> lock(Global_Student_Mutex);
 	RbsLib::Storage::StorageFile dir("Students");
 	RbsLib::Storage::StorageFile now_dir(".");
@@ -163,7 +163,7 @@ void Account::AccountManager::CreateStudent(
 	obj.Add("Password", pass_word);
 	obj.Add("PermissionLevel", permission_level);
 	obj.Add("Notes", notes);
-	obj.Add("IsEnable", true);
+	obj.Add("IsEnable", 1);
 	std::string str = obj.ToFormattedString();
 	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
 	fp.Close();
@@ -200,7 +200,7 @@ void Account::AccountManager::CreateTeacher(
 	const std::string& pass_word,
 	const std::string& notes, int permission_level)
 {
-	//½«½ÌÊ¦ĞÅÏ¢´æ·ÅÔÚ Teachers Ä¿Â¼ÏÂ£¬ÒÔ¹¤ºÅÃüÃû£¬Èç10000.json
+	//å°†æ•™å¸ˆä¿¡æ¯å­˜æ”¾åœ¨ Teachers ç›®å½•ä¸‹ï¼Œä»¥å·¥å·å‘½åï¼Œå¦‚10000.json
 	std::unique_lock<std::shared_mutex> lock(Global_Teacher_Mutex);
 	RbsLib::Storage::StorageFile dir("Teachers");
 	RbsLib::Storage::StorageFile now_dir(".");
@@ -244,12 +244,12 @@ bool Account::AccountManager::IsTeacherExist(std::uint64_t id)
 
 void Account::AccountManager::DeleteStudent(std::uint64_t student_id)
 {
-	//±êÖ¾ÆäÎª²»¿ÉÓÃÕË»§
+	//æ ‡å¿—å…¶ä¸ºä¸å¯ç”¨è´¦æˆ·
 }
 
 void Account::AccountManager::DeleteTeacher(std::uint64_t teacher_id)
 {
-	//±ê¼ÇÆäÎª²»¿ÉÓÃÕË»§
+	//æ ‡è®°å…¶ä¸ºä¸å¯ç”¨è´¦æˆ·
 }
 
 auto Account::AccountManager::GetStudentInfo(std::uint64_t id)->StudentBasicInfo
@@ -269,7 +269,7 @@ auto Account::AccountManager::GetStudentInfo(std::uint64_t id)->StudentBasicInfo
 	info.sex = obj("Sex");
 	info.email = obj("Email");
 	info.phone_number = obj("PhoneNumber");
-	obj.Get("EnrollmentDate", info.enrollment_date);
+	info.enrollment_date = obj("EnrollmentDate");
 	info.class_name = obj("Class");
 	info.college = obj("College");
 	info.password = obj("Password");
@@ -357,9 +357,45 @@ void Account::AccountManager::SetTeacherProperty(const TeacherBasicInfo& info)
 		.Write(RbsLib::Buffer(obj.ToFormattedString()));
 }
 
+auto Account::AccountManager::GetAllStudentInfo(void) -> std::vector<StudentBasicInfo>
+{
+	std::shared_lock<std::shared_mutex> lock(Global_Student_Mutex);
+	std::vector<StudentBasicInfo> info_list;
+	RbsLib::Storage::StorageFile dir(STUDENT_DIR);
+	if (dir.IsExist() && dir.GetFileType() == RbsLib::Storage::FileType::FileType::Dir)
+	{
+		for (const auto& it : dir)
+		{
+			if (it.GetExtension() == ".json" && it.GetFileType() == RbsLib::Storage::FileType::FileType::Regular)
+			{
+				info_list.push_back(GetStudentInfo(RbsLib::String::Convert::StringToNumber<std::uint64_t>(it.GetStem())));
+			}
+		}
+	}
+	return info_list;
+}
+
+auto Account::AccountManager::GetAllTeacherInfo(void) -> std::vector<TeacherBasicInfo>
+{
+	std::shared_lock<std::shared_mutex> lock(Global_Teacher_Mutex);
+	std::vector<TeacherBasicInfo> info_list;
+	RbsLib::Storage::StorageFile dir(TEACHER_DIR);
+	if (dir.IsExist() && dir.GetFileType() == RbsLib::Storage::FileType::FileType::Dir)
+	{
+		for (const auto& it : dir)
+		{
+			if (it.GetExtension() == ".json" && it.GetFileType() == RbsLib::Storage::FileType::FileType::Regular)
+			{
+				info_list.push_back(GetTeacherInfo(RbsLib::String::Convert::StringToNumber<std::uint64_t>(it.GetStem())));
+			}
+		}
+	}
+	return info_list;
+}
+
 void Account::ClassesManager::CreateClass(const std::string& class_name, std::uint64_t teacherID)
 {
-	//½«°à¼¶ĞÅÏ¢´æ´¢ÔÚClasses.jsonÎÄ¼şÖĞ
+	//å°†ç­çº§ä¿¡æ¯å­˜å‚¨åœ¨Classes.jsonæ–‡ä»¶ä¸­
 	std::unique_lock<std::shared_mutex> teacher_lock(Global_Teacher_Mutex);
 	std::unique_lock<std::shared_mutex> lock(Global_Classes_Mutex);
 	RbsLib::Storage::StorageFile classes_file(CLASSES_FILE);
@@ -370,15 +406,15 @@ void Account::ClassesManager::CreateClass(const std::string& class_name, std::ui
 	neb::CJsonObject class_json;
 	if (class_json.Parse(buffer.ToString()) == false)
 	{
-		Logger::LogError("ÅäÖÃÎÄ¼ş%s½âÎöÊ§°Ü£¬Ô­Òò: %s", CLASSES_FILE, class_json.GetErrMsg());
+		Logger::LogError("é…ç½®æ–‡ä»¶%sè§£æå¤±è´¥ï¼ŒåŸå› : %s", CLASSES_FILE, class_json.GetErrMsg());
 		std::abort();
 	}
-	//¼ì²é¿Î³ÌÊÇ·ñÒÑ¾­´æÔÚ
+	//æ£€æŸ¥è¯¾ç¨‹æ˜¯å¦å·²ç»å­˜åœ¨
 	if (class_json.KeyExist(class_name))
 		throw AccountException("Class is already exist");
-	//ÏòÀÏÊ¦ÎÄ¼şÌí¼Ó
+	//å‘è€å¸ˆæ–‡ä»¶æ·»åŠ 
 	AddClassToTeacher(teacherID,class_name);
-	//±£´æ¿Î³ÌĞÅÏ¢
+	//ä¿å­˜è¯¾ç¨‹ä¿¡æ¯
 	class_fp.Close();
 	neb::CJsonObject subjson;
 	subjson.Add("TeacherID", teacherID);
@@ -392,7 +428,7 @@ void Account::ClassesManager::CreateClass(const std::string& class_name, std::ui
 
 void Account::ClassesManager::DeleteClass(const std::string& class_name)
 {
-	//Èô°à¼¶ÖĞ²»´æÔÚÑ§Éú£¬ÔòÉ¾³ı°à¼¶¼°ÆäÏà¹ØĞÅÏ¢£¬Èô´æÔÚÑ§ÉúÔòÅ×³öÒì³£
+	//è‹¥ç­çº§ä¸­ä¸å­˜åœ¨å­¦ç”Ÿï¼Œåˆ™åˆ é™¤ç­çº§åŠå…¶ç›¸å…³ä¿¡æ¯ï¼Œè‹¥å­˜åœ¨å­¦ç”Ÿåˆ™æŠ›å‡ºå¼‚å¸¸
 }
 
 bool Account::ClassesManager::IsClassExist(const std::string& class_name)
@@ -409,15 +445,41 @@ bool Account::ClassesManager::IsClassExist(const std::string& class_name)
 	return false;
 }
 
+auto Account::ClassesManager::GetClassInfo(const std::string& class_name) -> ClassInfo
+{
+	std::shared_lock<std::shared_mutex> lock(Global_Classes_Mutex);
+	ClassInfo ret;
+	using namespace RbsLib::Storage;
+	StorageFile file(CLASSES_FILE);
+	if (file.IsExist() == false) throw AccountException("Class not found");
+	neb::CJsonObject tobj(file.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
+	if (!tobj.KeyExist(class_name))
+		throw AccountException("Class not found");
+	ret.name = class_name;
+	if (tobj.KeyExist(class_name)==false) throw AccountException("Class not found");
+	neb::CJsonObject obj;
+	tobj.Get(class_name, obj);
+	obj.Get("TeacherID", ret.teacher_id);
+	obj.Get("CreateTime", ret.create_time);
+	for (int i = 0; i < obj["Students"].GetArraySize(); ++i)
+	{
+		std::uint64_t temp;
+		obj["Students"].Get(i, temp);
+		ret.students.push_back(temp);
+	}
+	return ret;
+}
+
+
 void Account::SubjectManager::CreateSubject(std::uint64_t subject_id, const std::string& subject_name, int begin_year, int end_year, const std::string & classroom, const std::string& description)
 {
 	using namespace RbsLib::Storage;
-	//´´½¨¿Î³Ì£¬·ÅÔÚSubjectsÄ¿Â¼ÖĞ£¬ÒÔ¿Î³Ì±àºÅÃüÃû£¬Èç1000000.json
+	//åˆ›å»ºè¯¾ç¨‹ï¼Œæ”¾åœ¨Subjectsç›®å½•ä¸­ï¼Œä»¥è¯¾ç¨‹ç¼–å·å‘½åï¼Œå¦‚1000000.json
 	std::unique_lock<std::shared_mutex> lock(Global_Subjects_Mutex);
-	//¼ì²éÄ¿Â¼ÊÇ·ñ´æÔÚ
+	//æ£€æŸ¥ç›®å½•æ˜¯å¦å­˜åœ¨
 	if (StorageFile(SUBJECT_DIR).IsExist() == false)
 		StorageFile(".").CreateDir(SUBJECT_DIR);
-	//¼ì²é¿Î³ÌÊÇ·ñÒÑ¾­´æÔÚ
+	//æ£€æŸ¥è¯¾ç¨‹æ˜¯å¦å·²ç»å­˜åœ¨
 	StorageFile file(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
 	if (file.IsExist()) throw AccountException("Subject is already exist");
 	neb::CJsonObject object;
@@ -433,7 +495,7 @@ void Account::SubjectManager::CreateSubject(std::uint64_t subject_id, const std:
 
 void Account::SubjectManager::AddStudent(std::uint64_t student_id, std::uint64_t subject_id, const std::string & notes)
 {
-	//Ïò¿Î³ÌÌí¼ÓÑ§Éú
+	//å‘è¯¾ç¨‹æ·»åŠ å­¦ç”Ÿ
 	std::unique_lock<std::shared_mutex> lock(Global_Student_Mutex);
 	std::unique_lock<std::shared_mutex> lock2(Global_Subjects_Mutex);
 	using namespace RbsLib::Storage::FileIO;
@@ -454,7 +516,7 @@ void Account::SubjectManager::AddStudent(std::uint64_t student_id, std::uint64_t
 
 void Account::SubjectManager::AddTeacher(std::uint64_t teacher_id, std::uint64_t subject_id)
 {
-	//Ïò¿Î³ÌÌí¼ÓÀÏÊ¦
+	//å‘è¯¾ç¨‹æ·»åŠ è€å¸ˆ
 	std::unique_lock<std::shared_mutex> lock(Global_Teacher_Mutex);
 	std::unique_lock<std::shared_mutex> lock2(Global_Subjects_Mutex);
 	using namespace RbsLib::Storage::FileIO;
@@ -471,7 +533,7 @@ void Account::SubjectManager::AddTeacher(std::uint64_t teacher_id, std::uint64_t
 
 void Account::SubjectManager::RemoveStudent(std::uint64_t student_id, std::uint64_t subject_id)
 {
-	//´Ó¿Î³ÌÒÆ³ıÑ§Éú
+	//ä»è¯¾ç¨‹ç§»é™¤å­¦ç”Ÿ
 	std::unique_lock<std::shared_mutex> lock(Global_Student_Mutex);
 	std::unique_lock<std::shared_mutex> lock2(Global_Subjects_Mutex);
 	using namespace RbsLib::Storage::FileIO;
@@ -493,7 +555,7 @@ void Account::SubjectManager::RemoveStudent(std::uint64_t student_id, std::uint6
 
 void Account::SubjectManager::RemoveTeacher(std::uint64_t teacher_id, std::uint64_t subject_id)
 {
-	//´Ó¿Î³ÌÒÆ³ıÀÏÊ¦
+	//ä»è¯¾ç¨‹ç§»é™¤è€å¸ˆ
 	std::unique_lock<std::shared_mutex> lock(Global_Teacher_Mutex);
 	std::unique_lock<std::shared_mutex> lock2(Global_Subjects_Mutex);
 	using namespace RbsLib::Storage::FileIO;
@@ -515,7 +577,7 @@ void Account::SubjectManager::RemoveTeacher(std::uint64_t teacher_id, std::uint6
 
 void Account::SubjectManager::DeleteSubject(std::uint64_t subject_id)
 {
-	//É¾³ı¿Î³Ì£¬Ö»ÔÊĞíÉ¾³ıÃ»ÓĞÀÏÊ¦Ã»ÓĞÑ§ÉúµÄ¿Î³Ì£¬·ñÔòÅ×³öÒì³£
+	//åˆ é™¤è¯¾ç¨‹ï¼Œåªå…è®¸åˆ é™¤æ²¡æœ‰è€å¸ˆæ²¡æœ‰å­¦ç”Ÿçš„è¯¾ç¨‹ï¼Œå¦åˆ™æŠ›å‡ºå¼‚å¸¸
 }
 
 bool Account::SubjectManager::IsSubjectExist(std::uint64_t subject_id)
@@ -575,6 +637,45 @@ auto Account::SubjectManager::GetAllSubjectInfo(void) -> std::vector<SubjectInfo
 		}
 	}
 	return info_list;
+}
+
+void Account::SubjectManager::SetStudentProperty(std::uint64_t subject_id, const SubjectInfo::Student& info)
+{
+	std::unique_lock<std::shared_mutex> lock(Global_Subjects_Mutex);
+	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
+	auto fp = file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject obj(fp.Read(file.GetFileSize()).ToString());
+	for (int i = 0; i < obj["StudentsID"].GetArraySize(); ++i)
+	{
+		std::uint64_t temp = 0;
+		if (obj["StudentsID"][i].Get("ID", temp) == false)
+			throw AccountException("Read students list from subject failed");
+		if (temp == info.id)
+		{
+			obj["StudentsID"][i].ReplaceAdd("Grade", info.grade);
+			obj["StudentsID"][i].ReplaceAdd("Notes", info.notes);
+			break;
+		}
+	}
+	fp.Close();
+	fp = file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
+	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
+}
+
+bool Account::SubjectManager::IsStudentInSubject(std::uint64_t student_id, std::uint64_t subject_id)
+{
+	std::shared_lock<std::shared_mutex> lock(Global_Subjects_Mutex);
+	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
+	auto fp = file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject obj(fp.Read(file.GetFileSize()).ToString());
+	for (int i = 0; i < obj["StudentsID"].GetArraySize(); ++i)
+	{
+		std::uint64_t temp = 0;
+		if (obj["StudentsID"][i].Get("ID", temp) == false)
+			throw AccountException("Read students list from subject failed");
+		if (temp == student_id) return true;
+	}
+	return false;
 }
 
 Account::AccountException::AccountException(const std::string& reason) noexcept

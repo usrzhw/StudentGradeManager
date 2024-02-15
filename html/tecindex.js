@@ -60,12 +60,12 @@ function logout() {
 
 function on_item_click(e) {
     var frame = document.getElementById("MainFrame");
-    if (e.text == "我的课程")
-        frame.src = "stusubjects.html";
+    if (e.text == "班级管理")
+        frame.src = "tecclasses.html";
     else if (e.text == "课程查询")
         frame.src = "stusearchsubject.html";
-    else if (e.text == "成绩查询")
-        frame.src = "stugrade.html";
+    else if (e.text == "课程管理")
+        frame.src = "tecsubjects.html";
     else if (e.text == "账号管理")
         frame.src = "self_account.html";
     var list = document.querySelectorAll("li a");
