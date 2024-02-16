@@ -921,6 +921,58 @@ static void GetAllStudentsInfo(const RbsLib::Network::HTTP::Request& request)
 	return SendSuccessResponse(request.connection, obj);
 }
 
+static void CreateStudent(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查登录信息
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	std::string name = obj("name");
+	std::string phone_number = obj("phone_number");
+	std::string email = obj("email");
+	std::string sex = obj("sex");
+	std::string enrollment_date = obj("enrollment_date");
+	std::string password = obj("password");
+	std::string college = obj("college");
+	std::string class_name = obj("class");
+	std::string notes = obj("notes");
+	int permission_level = RbsLib::String::Convert::StringToNumber<int>(obj("permission_level"));
+	//检查名称是否合法
+	if (name.empty() || class_name.empty())
+		return SendError(request.connection, "姓名或班级不可为空", 422);
+	//检查权限等级是否合法
+	if (permission_level < 0 || permission_level>4)
+		return SendError(request.connection, "权限等级应在0-4之间", 422);
+	//检查班级是否存在
+	if (Account::ClassesManager::IsClassExist(class_name) == false)
+		return SendError(request.connection, "班级不存在", 422);
+	//申请学号
+	std::uint64_t student_id = Generator::StudentsIDGenerator();
+	//创建学生
+	try
+	{
+		Account::AccountManager::CreateStudent(student_id, name, sex, email, phone_number,
+			enrollment_date, password, college, class_name, notes, permission_level);
+	}
+	catch (const std::exception& e)
+	{
+		Logger::LogError("创建学生[%d]失败：%s", student_id, e.what());
+		return SendError(request.connection, "Server error", 500);
+	}
+	Logger::LogInfo("用户[%d:%s]创建了学生[%d:%s]", basic_info.ID, basic_info.name.c_str(),
+		student_id, name.c_str());
+	obj.Clear();
+	obj.Add("message", "ok");
+	obj.Add("id", student_id);
+	return SendSuccessResponse(request.connection, obj);
+}
+
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
 ModuleSDK::ModuleInfo Init(void)
 {
@@ -949,6 +1001,7 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("get_subject_info", GetSubjectInfo);
 	info.Add("set_student_subject_grade", SetStudentSubjectGrade);
 	info.Add("get_all_students_info", GetAllStudentsInfo);
+	info.Add("create_student", CreateStudent);
 	//将模块信息返回
 	return info;
 }
