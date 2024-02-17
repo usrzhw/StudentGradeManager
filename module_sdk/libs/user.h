@@ -76,14 +76,13 @@ namespace Account
 		static void CreateStudent(
 			std::uint64_t ID,
 			const std::string& name,
-			const std::string& student_sex, const std::string & email,
-			const std::string& phone_number,
+			const std::string& phone_number, const std::string& email,
+			const std::string& student_sex,
 			const std::string& enrollment_date,
 			const std::string& pass_word,
 			const std::string& college,
 			const std::string& class_name,
-			const std::string& notes, int permission_level
-		);
+			const std::string& notes, int permission_level);
 		static void CreateTeacher(
 			std::uint64_t ID,
 			const std::string& name, 
