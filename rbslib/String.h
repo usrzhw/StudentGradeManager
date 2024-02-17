@@ -1,6 +1,10 @@
 #pragma once
 #include "BaseType.h"
 #include <string>
+#include <iostream>
+#include <vector>
+using namespace std;
+vector<std::string> split(const std::string& str, const std::string& p);
 namespace RbsLib::String
 {
 	namespace Convert

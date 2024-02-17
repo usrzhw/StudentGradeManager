@@ -1,17 +1,9 @@
 #include "String.h"
 #include <iostream>
-using namespace space;
+#include <cstring>
+#include <vector>
+using namespace std;
 
-int compare(const char& str, const std::string& p)
-{
-	int flag = 0;
-	for (int i = 0; i < p.size(); i++)
-	{
-		if (!strcmp(str, p[i])) flag++;
-	}
-	if (flag == 0) return 0;
-	else return 1;
-}
 
 vector<std::string> split(const std::string& str, const std::string& p)
 {
@@ -20,8 +12,15 @@ vector<std::string> split(const std::string& str, const std::string& p)
 	int count = 0;
 	for (int i = 0; i < str.size(); i++)
 	{
-		int shu = compare(str[i], p);
-		if (shu == 0)
+		int flag = 0;
+		for (int j = 0; j < p.size(); j++)
+		{
+			if (str[i] == p[j])
+			{
+				flag++;
+			}
+		}
+		if (flag == 0)
 		{
 			a[k][count++] = str[i];
 		}
