@@ -75,6 +75,7 @@ async function OpenStudentInfoDialog(student_id) {
 
 function Close() {
     document.getElementById("StudentInfo").close();
+    document.getElementById("AddStudentDialog").close();
 }
 
 async function Makesure() {
@@ -155,6 +156,41 @@ async function Makesure() {
             alert("修改权限等级失败:" + error.toString());
         });
     }
+    Close();
+    ShowStudentList();
+}
+
+function OpenAddStudentDialog() {
+    document.getElementById("ANameBox").value = "";
+    document.getElementById("ASexBox").value = "";
+    document.getElementById("APhoneNumberBox").value = "";
+    document.getElementById("AEMailBox").value = "";
+    document.getElementById("ACollegeBox").value = "";
+    document.getElementById("AClassBox").value = "";
+    document.getElementById("AEnrollmentDateBox").value = "";
+    document.getElementById("ANotesBox").value = "";
+    document.getElementById("APermissionLevelBox").value = "";
+    document.getElementById("APasswordBox").value = "";
+    document.getElementById("AddStudentDialog").showModal();
+}
+
+async function CreateStudent() {
+    await RequestJson("/app/stu.create_student", JSON.stringify({
+        ID: localStorage.getItem("id"),
+        token: localStorage.getItem("token"),
+        name: document.getElementById("ANameBox").value,
+        sex: document.getElementById("ASexBox").value,
+        phone_number: document.getElementById("APhoneNumberBox").value,
+        email: document.getElementById("AEMailBox").value,
+        college: document.getElementById("ACollegeBox").value,
+        class: document.getElementById("AClassBox").value,
+        enrollment_date: document.getElementById("AEnrollmentDateBox").value,
+        notes: document.getElementById("ANotesBox").value,
+        permission_level: document.getElementById("APermissionLevelBox").value,
+        password: document.getElementById("APasswordBox").value,
+    })).catch(error => {
+        alert("创建学生失败:" + error.toString());
+    });
     Close();
     ShowStudentList();
 }
