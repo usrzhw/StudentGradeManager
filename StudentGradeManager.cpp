@@ -1,6 +1,6 @@
 ﻿// StudentGradeManager.cpp: 定义应用程序的入口点。
 //
-
+#include <csignal>
 #include <iostream>
 #include <regex>
 #include "rbslib/Network.h"
@@ -13,6 +13,7 @@ using namespace std;
 #include <memory>
 int main()
 {
+	std::signal(SIGPIPE, SIG_IGN);
 	//读取配置文件
 	Logger::LogInfo("读取配置文件");
 	try
@@ -56,7 +57,6 @@ int main()
 		}
 		else if (true == std::regex_match(h.path.c_str(), m, std::regex("^/html/(\\S+)$")))
 		{
-			
 			try
 			{
 				auto buffer = RbsLib::Storage::StorageFile("html")[RbsLib::Storage::StorageFile(m[1]).GetName()].Open(RbsLib::Storage::FileIO::OpenMode::Read,
@@ -74,6 +74,10 @@ int main()
 				cout << ex.what() << endl;
 				x.Send(header.ToBuffer());
 				x.Send(not_found_content);
+			}
+			catch (const std::exception& ex)
+			{
+				Logger::LogWarn("模块%s.%s抛出异常:%s", m[1].str().c_str(), m[2].str().c_str(), ex.what());
 			}
 
 		}
@@ -105,6 +109,10 @@ int main()
 				cout << ex.what() << endl;
 				x.Send(header.ToBuffer());
 				x.Send(not_found_content);
+			}
+			catch (const std::exception& ex)
+			{
+				Logger::LogWarn("模块%s.%s抛出异常:%s", m[1].str().c_str(), m[2].str().c_str(), ex.what());
 			}
 		}
 		else

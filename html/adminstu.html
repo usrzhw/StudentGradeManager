@@ -1,0 +1,131 @@
+﻿<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-items: start;
+        }
+
+        .title {
+            display: block;
+        }
+
+        #chose_bar {
+            width: 100vw;
+            background-color: rgb(238, 238, 238);
+            height: 5vh;
+            display: flex;
+            align-items: center;
+            justify-items: center;
+        }
+
+        table {
+            margin-top: 2vh;
+            box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
+            border-collapse: collapse; /* 取消表格边框 */
+        }
+
+        table, th, tr, td {
+            border-bottom: 1px solid #dedede; /* 表格横线 */
+            padding: 2vh;
+            text-align: center;
+        }
+
+            table tbody tr:hover {
+                background-color: rgb(200, 200, 200);
+                cursor: pointer;
+            }
+
+        .back_button {
+            margin-left: auto;
+            margin-right: 3vw;
+            background-color: #4caf50;
+            color: #fff;
+            padding: 6px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .right_button {
+            background-color: #4caf50;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .item {
+            border-bottom: 1px solid #dedede; /* 表格横线 */
+            padding: 2vh;
+            width: 60vw;
+            text-align: center;
+        }
+
+        dialog div input {
+            width: 50vw;
+            height: 5vh;
+            margin: 5px;
+            box-sizing: border-box;
+            padding: 8px;
+            margin-bottom: 16px;
+        }
+    </style>
+    <script src="adminstu.js"></script>
+</head>
+
+<body>
+    <h1 class="title">学生管理</h1>
+    <div id="chose_bar">
+        <button class="right_button" style="margin-left:auto;margin-right:5vw;">添加</button>
+    </div>
+    <div id="from_bar">
+        <table id="subjects_from" style="width: 80vw;text-align: center;">
+            <thead>
+                <tr id="FormHeader">
+                    <th>学号</th>
+                    <th>姓名</th>
+                    <th>性别</th>
+                    <th>班级</th>
+                    <th>备注</th>
+                </tr>
+            </thead>
+            <tbody id="FormBody">
+            </tbody>
+        </table>
+        <dialog id="StudentInfo">
+            <div style="display: flex;flex-direction: column; align-items:center;">
+                <label>姓名:</label>
+                <input id="NameBox" />
+                <label>学号:</label>
+                <input id="StudentIDBox" readonly="readonly" />
+                <label>性别</label>
+                <input id="SexBox" />
+                <label>手机号码</label>
+                <input id="PhoneNumberBox" />
+                <label>电子邮箱</label>
+                <input id="EMailBox" />
+                <label>学院</label>
+                <input id="CollegeBox" />
+                <label>班级</label>
+                <input id="ClassBox" readonly="readonly" />
+                <label>入学时间</label>
+                <input id="EnrollmentDateBox" />
+                <label>备注</label>
+                <input id="NotesBox" />
+                <label>权限等级</label>
+                <input id="PermissionLevelBox" type="number" />
+                <button onclick="Close()" class="right_button" style="width: 50vw; margin: 5px; background-color: gray; color: black; ">关闭</button>
+                <button onclick="Makesure()" class="right_button" style="width: 50vw; margin: 5px;">确定修改</button>
+            </div>
+        </dialog>
+    </div>
+</body>
+
+</html>
+

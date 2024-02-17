@@ -3,8 +3,65 @@
 #include <cstdint>
 #include <vector>
 #include <exception>
+#include <vector>
+#include <ctime>
 namespace Account
 {
+	struct StudentBasicInfo
+	{
+		std::uint64_t id;
+		std::string name;
+		std::string sex;
+		std::string phone_number;
+		std::string email;
+		std::string enrollment_date;
+		std::string class_name;
+		std::string college;
+		std::string password;
+		int permission_level;
+		std::string notes;
+		int is_enable;
+		std::vector<std::uint64_t> subjects;
+	};
+	struct TeacherBasicInfo
+	{
+		std::uint64_t id;
+		std::string name;
+		std::string sex;
+		std::string phone_number;
+		std::string email;
+		std::vector<std::string> classes;
+		std::vector<std::uint64_t> subjects;
+		std::string college;
+		std::string password;
+		int permission_level;
+		std::string notes;
+		int is_enable;
+	};
+	struct SubjectInfo
+	{
+		struct Student
+		{
+			int id;
+			int grade;
+			std::string notes;
+		};
+		std::uint64_t id;
+		std::string name;
+		int semester_start;
+		int semester_end;
+		std::string classroom;
+		std::string description;
+		std::vector<std::uint64_t> teachers;
+		std::vector <Student> students;
+	};
+	struct ClassInfo 
+	{
+		std::string name;
+		std::uint64_t teacher_id;
+		std::string create_time;
+		std::vector<std::uint64_t> students;
+	};
 	class AccountException : public std::exception
 	{
 	private:
@@ -19,39 +76,41 @@ namespace Account
 		static void CreateStudent(
 			std::uint64_t ID,
 			const std::string& name,
-			const std::string& student_sex,
+			const std::string& student_sex, const std::string & email,
 			const std::string& phone_number,
 			const std::string& enrollment_date,
-			const std::string& pass_word, 
-			const std::string & college,
-			const std::string& class_name, 
-			int permission_level
+			const std::string& pass_word,
+			const std::string& college,
+			const std::string& class_name,
+			const std::string& notes, int permission_level
 		);
 		static void CreateTeacher(
 			std::uint64_t ID,
-			const std::string& name,
-			const std::string& teacher_sex,
+			const std::string& name, 
+			const std::string& teacher_sex, const std::string & email,
 			const std::string& phone_number,
-			const std::string& pass_word,
-			const std::string& class_name,
-			int permission_level
+			const std::string & college,
+			const std::string& pass_word, 
+			const std::string & notes, int permission_level
 		);
-		static void AddSubjectToStudent(std::uint64_t student_id, std::uint64_t subject_id);
-		static void AddSubjectToTeacher(std::uint64_t teacher_id, std::uint64_t subject_id);
-		static void AddClassToTeacher(std::uint64_t teacher_id, std::uint64_t class_name);
-		static void RemoveSubjectFromStudent(std::uint64_t student_id, std::uint64_t subject_id);
-		static void RemoveSubjectFromTeacher(std::uint64_t teacher_id, std::uint64_t subject_id);
-		static void RemoveClassFromTeacher(std::uint64_t teacher_id, std::uint64_t class_name);
+		static bool IsStudentExist(std::uint64_t id);
+		static bool IsTeacherExist(std::uint64_t id);
 		static void DeleteStudent(std::uint64_t student_id);
 		static void DeleteTeacher(std::uint64_t teacher_id);
+		static auto GetStudentInfo(std::uint64_t id)-> StudentBasicInfo;
+		static auto GetTeacherInfo(std::uint64_t id) -> TeacherBasicInfo;
+		static void SetStudentProperty(const StudentBasicInfo& info);
+		static void SetTeacherProperty(const TeacherBasicInfo& info);
+		static auto GetAllStudentInfo(void) -> std::vector<StudentBasicInfo>;
+		static auto GetAllTeacherInfo(void) -> std::vector<TeacherBasicInfo>;
 	};
 	class ClassesManager
 	{
 	public:
-		static void CreateClass(const std::string& class_name, std::uint64_t teacherID, int create_year);
-		static void AddStudentToClass(std::uint64_t student_id, const std::string class_name);
-		static void RemoveStudentFromClass(const std::string& class_name, std::uint64_t student_id);
+		static void CreateClass(const std::string& class_name, std::uint64_t teacherID);
 		static void DeleteClass(const std::string& class_name);
+		static bool IsClassExist(const std::string& class_name);
+		static auto GetClassInfo(const std::string& class_name)->ClassInfo;
 	};
 	class SubjectManager
 	{
@@ -60,25 +119,27 @@ namespace Account
 			std::uint64_t subject_id,
 			const std::string& subject_name,
 			int begin_year,
-			int end_year,
-			const std::string& description
+			int end_year, const std::string & classroom, const std::string& description
 			);
-		static void AddStudent(std::uint64_t id);
-		static void AddTeacher(std::uint64_t id);
-		static void RemoveStudent(std::uint64_t id);
-		static void RemoveTeacher(std::uint64_t id);
+		static void AddStudent(std::uint64_t student_id, std::uint64_t subject_id, const std::string & notes);
+		static void AddTeacher(std::uint64_t teacher, std::uint64_t subject_id);
+		static void RemoveStudent(std::uint64_t student_id, std::uint64_t subject_id);
+		static void RemoveTeacher(std::uint64_t teacher_id, std::uint64_t subject_id);
 		static void DeleteSubject(std::uint64_t subject_id);
+		static bool IsSubjectExist(std::uint64_t subject_id);
+		static SubjectInfo GetSubjectInfo(std::uint64_t subject_id);
+		static auto GetAllSubjectInfo(void) -> std::vector<SubjectInfo>;
+		static void SetStudentProperty(std::uint64_t subject_id,const SubjectInfo::Student& info);
+		static bool IsStudentInSubject(std::uint64_t student_id, std::uint64_t subject_id);
+		
 	};
-	class User
+	struct User
 	{
-	private:
 		std::string name;
 		std::uint64_t ID;
 		std::string token;
-	public:
-		User(const std::string& name, std::uint64_t ID, const std::string& token);
-		User() = default;
-
+		int permission_level;
+		std::time_t enable_time;
 	};
 	
 }

@@ -53,14 +53,14 @@ set_target_properties(test_module PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BI
 
 #学生成绩管理系统模块
 file(GLOB STU_MODULE_SRC "module_sdk/libs/*")
-add_library(stu_module SHARED ${MODULE_SDK_HEADERS} ${JSON_LIB_HEADERS} ${RBS_LIB_HEADERS} "module_sdk/stu_module.cpp" ${STU_MODULE_SRC})
-target_link_libraries(stu_module moduleloader rbs json)
+add_library(stu_module SHARED ${MODULE_SDK_HEADERS} ${JSON_LIB_HEADERS} ${RBS_LIB_HEADERS} ${LOG_LIB_HEADERS} "module_sdk/stu_module.cpp" ${STU_MODULE_SRC})
+target_link_libraries(stu_module moduleloader rbs json logger "fmt" "uuid")
 set_target_properties(stu_module PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/app)
 
 #复制网页等文件
-file(GLOB htmlCopyFiles "html/*.html")
+file(GLOB htmlCopyFiles "html/*")
 file(COPY ${htmlCopyFiles} DESTINATION ${CMAKE_BINARY_DIR}/html)
-file(GLOB HTML_FILES "${CMAKE_BINARY_DIR}/html/*.html")
+file(GLOB HTML_FILES "${CMAKE_BINARY_DIR}/html/*")
 
 #生成主程序
 add_executable(StudentGradeManager  "StudentGradeManager.cpp" ${LOG_LIB_HEADERS} ${RBS_LIB_HEADERS} ${MODULE_LOADER_LIB_HEADERS})

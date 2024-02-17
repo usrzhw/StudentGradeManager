@@ -54,7 +54,7 @@
 <body>
 
     <form id="loginForm">
-        <h2>学生成绩管理系统</h2>
+        <h2>学生成绩管理系统管理员端</h2>
         <label for="username">学号/工号:</label>
         <input type="text" id="username" name="username" pattern="[0-9]+" required>
 
@@ -91,10 +91,15 @@
                     localStorage.setItem("token", json_data.token);
                     localStorage.setItem("permission", json_data.permission);
                     localStorage.setItem("id", json_data.id);
-                    if (json_data.type == "student") {
+                    if (json_data.permission == 0) {
+                        location.href = "adminindex.html";
+                    }
+                    else if (json_data.type == "student") {
+                        alert("权限不足");
                         location.href = "stuindex.html";
                     }
-                    else if (json_data.type == "teacher"){
+                    else if (json_data.type == "teacher") {
+                        alert("权限不足");
                         location.href = "tecindex.html";
                     }
                 }).catch(error => {

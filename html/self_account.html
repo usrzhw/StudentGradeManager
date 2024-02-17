@@ -1,0 +1,74 @@
+﻿<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-items: start;
+        }
+
+        .title {
+            display: block;
+        }
+
+        table {
+            margin-top: 2vh;
+            box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
+            border-collapse: collapse; /* 取消表格边框 */
+        }
+
+        #info_bar, .item {
+            border-bottom: 1px solid #dedede; /* 表格横线 */
+            padding: 2vh;
+            margin: 2vh;
+        }
+        #info_bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-items: center;
+            margin-top: 2vh;
+            box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
+            width: 40vw;
+        }
+        .right_button {
+            background-color: #4caf50;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        label {
+            padding: 2px;
+            display: block
+        }
+        input {
+            padding: 8px;
+        }
+    </style>
+    <script src="self_account.js"></script>
+</head>
+
+<body>
+    <h1 class="title">账号信息</h1>
+    <div id="info_bar">
+        <dialog id="ChangePasswordDialog">
+            <div style="display: flex;flex-direction: column; width:40vw;">
+                <label for="opwd">请输入旧密码</label>
+                <input type="password" name="opwd" id="old_password" />
+                <label for="npwd">请输入新密码</label>
+                <input type="password" name="npwd" id="new_password" />
+                <label for="rnpwd">请重复输入新密码</label>
+                <input type="password" name="rnpwd" id="re_new_password" />
+                <button onclick="make_sure_change()" style="margin:5px; margin-top:10px;" class="right_button">确定修改</button>
+                <button onclick="cancel_change()" style="margin:5px;background-color:gray;color:black;" class="right_button">取消</button>
+            </div>
+        </dialog>
+        <button class="right_button" type="button" onclick="change_password()">修改密码</button>
+    </div>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-items: start;
+        }
+
+        .title {
+            display: block;
+        }
+
+        #chose_bar {
+            width: 100vw;
+            background-color: rgb(238, 238, 238);
+            height: 5vh;
+            display: flex;
+            align-items: center;
+            justify-items: center;
+        }
+        table {
+            margin-top: 2vh;
+            box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
+            border-collapse: collapse; /* 取消表格边框 */
+        }
+
+        table, th, tr, td {
+            border-bottom: 1px solid #dedede; /* 表格横线 */
+            padding: 2vh;
+            text-align: center;
+        }
+
+    </style>
+    <script src="stusearchsubject.js"></script>
+</head>
+
+<body>
+    <h1 class="title">搜索课程</h1>
+    <div id="chose_bar">
+        <label style="margin-left: 10vw;margin-right: 2vw;">课程名称或编号:</label>
+        <input id="subject_name" oninput="search()">
+        <button style="margin-left: 2vw;" onclick="search()">查询</button>
+    </div>
+    <div id="from_bar">
+        <table id="subjects_from" style="width: 80vw;text-align: center;">
+            <thead>
+                <tr>
+                    <th>课程名称</th>
+                    <th>课程编号</th>
+                    <th>授课地点</th>
+                    <th>授课教师</th>
+                    <th>开课学期</th>
+                    <th>课程描述</th>
+                </tr>
+            </thead>
+            <tbody id="subjects_from_body">
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

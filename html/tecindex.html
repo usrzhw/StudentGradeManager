@@ -24,6 +24,14 @@
             flex-direction: column;
         }
 
+        iframe {
+            position: fixed;
+            height: 85vh;
+            width: 80vw;
+            margin-top: 15vh;
+            margin-left: 20vw;
+        }
+
         li a {
             display: block;
             padding: 2vh;
@@ -35,8 +43,16 @@
             li a:hover {
                 background-color: rgb(196, 196, 196)
             }
+
+            li a:active {
+                background-color: rgb(172, 172, 172);
+            }
+
+        .active {
+            background-color: rgb(211, 211, 211);
+        }
     </style>
-    <script>
+    <script src="tecindex.js">
     </script>
 </head>
 
@@ -44,14 +60,15 @@
     <div id="Header">
         <div style="margin-left: 50px;font-size: 29px;">学生成绩管理系统</div>
         <div style="margin-left: 20px;font-size: 20px;color: rgb(78, 78, 78);">Student Grade Manager</div>
-        <div style="margin-left: 20px;font-size: 20px;color: rgb(57, 57, 57);">学生端</div>
-        <div style="margin-left: auto;margin-right: 2vw;color: white;">登出</div>
+        <div style="margin-left: 20px;font-size: 20px;color: rgb(57, 57, 57);">教师端</div>
+        <div onclick="logout()" style="margin-left: auto;margin-right: 2vw;color: white;">登出</div>
     </div>
     <ul id="MenuList">
-        <li><a>我的课程</a></li>
-        <li><a>课程查询</a></li>
-        <li><a>成绩查询</a></li>
-        <li><a>账号管理</a></li>
+        <li><a class="active" onclick="on_item_click(this)">班级管理</a></li>
+        <li><a onclick="on_item_click(this)">课程管理</a></li>
+        <li><a onclick="on_item_click(this)">账号管理</a></li>
     </ul>
+    <iframe id="MainFrame" src="tecclasses.html">
+    </iframe>
 </body>
 </html>
