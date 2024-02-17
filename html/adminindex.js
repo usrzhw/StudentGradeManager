@@ -66,8 +66,8 @@ function on_item_click(e) {
     var frame = document.getElementById("MainFrame");
     if (e.text == "学生管理")
         frame.src = "adminstu.html";
-    else if (e.text == "课程查询")
-        frame.src = "stusearchsubject.html";
+    else if (e.text == "教师管理")
+        frame.src = "admintec.html";
     else if (e.text == "课程管理")
         frame.src = "tecsubjects.html";
     else if (e.text == "账号管理")
