@@ -957,7 +957,7 @@ static void CreateStudent(const RbsLib::Network::HTTP::Request& request)
 	//创建学生
 	try
 	{
-		Account::AccountManager::CreateStudent(student_id, name, sex, email, phone_number,
+		Account::AccountManager::CreateStudent(student_id, name, phone_number,email, sex,
 			enrollment_date, password, college, class_name, notes, permission_level);
 	}
 	catch (const std::exception& e)
@@ -972,6 +972,37 @@ static void CreateStudent(const RbsLib::Network::HTTP::Request& request)
 	obj.Add("id", student_id);
 	return SendSuccessResponse(request.connection, obj);
 }
+
+static void GetAllTeachersInfo(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
+	obj.AddEmptySubArray("teachers");
+	auto list = Account::AccountManager::GetAllTeacherInfo();
+	for (auto& info : list)
+	{
+		neb::CJsonObject subobj;
+		subobj.Add("name", info.name);
+		subobj.Add("id", info.id);
+		subobj.Add("sex", info.sex);
+		subobj.Add("college", info.college);
+		subobj.Add("notes", info.notes);
+		obj["teachers"].Add(subobj);
+	}
+	Logger::LogInfo("用户[%d:%s]获取了所有教师信息", basic_info.ID, basic_info.name.c_str());
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
 
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
 ModuleSDK::ModuleInfo Init(void)
@@ -1002,6 +1033,7 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("set_student_subject_grade", SetStudentSubjectGrade);
 	info.Add("get_all_students_info", GetAllStudentsInfo);
 	info.Add("create_student", CreateStudent);
+	info.Add("get_all_teachers_info", GetAllTeachersInfo);
 	//将模块信息返回
 	return info;
 }
