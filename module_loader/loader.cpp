@@ -6,7 +6,7 @@ Module::ModuleObject::ModuleObject(const RbsLib::Storage::StorageFile& path)
 	void* temp = dlopen(path.Path().c_str(), RTLD_LAZY);
 	if (!temp) throw ModuleLoaderException(std::string("Open shared lib failed: ") + dlerror());
 	this->dl = std::shared_ptr<void*>(new void* (temp), [](void** p) {dlclose(*p); delete p; });
-	ModuleSDK::ModuleInfo(*init)(void)=(ModuleSDK::ModuleInfo (*)(void))dlsym(*(this->dl),"Init");
+	ModuleSDK::ModuleInfo(*init)(void) = (ModuleSDK::ModuleInfo(*)(void))dlsym(*(this->dl), "Init");
 	if (init == nullptr)
 	{
 		throw ModuleLoaderException("Can not find init function in module");
@@ -36,13 +36,13 @@ void Module::ModuleManager::LoadModules(const RbsLib::Storage::StorageFile& dir)
 		throw ModuleLoaderException("指定的模块路径不是目录");
 	for (const auto& it : dir)
 	{
-		if (it.GetFileType() == RbsLib::Storage::FileType::FileType::Regular&&
-			it.GetExtension()==".so")
+		if (it.GetFileType() == RbsLib::Storage::FileType::FileType::Regular &&
+			it.GetExtension() == ".so")
 		{
 			try
 			{
 				ModuleObject obj(it);
-				this->modules.insert(std::pair(obj.module_info.module_name,obj));
+				this->modules.insert(std::pair(obj.module_info.module_name, obj));
 			}
 			catch (ModuleLoaderException const& ex)
 			{
