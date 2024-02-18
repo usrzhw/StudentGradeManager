@@ -5,29 +5,18 @@
 using namespace std;
 
 
-vector<std::string> split(const std::string& str, const std::string& p)
+std::vector<string> split(const std::string& str, const std::string& pattern)
 {
-	std::string a[1000];
-	int k = 0;
-	int count = 0;
-	for (int i = 0; i < str.size(); i++)
+	char* strc = new char[strlen(str.c_str()) + 1];
+	strcpy(strc, str.c_str());
+	vector<string> res;
+	char* temp = strtok(strc, pattern.c_str());
+	while (temp != NULL)
 	{
-		int flag = 0;
-		for (int j = 0; j < p.size(); j++)
-		{
-			if (str[i] == p[j])
-			{
-				flag++;
-			}
-		}
-		if (flag == 0)
-		{
-			a[k][count++] = str[i];
-		}
-		else
-		{
-			count = 0;
-			k++;
-		}
+		res.push_back(string(temp));
+		temp = strtok(NULL, pattern.c_str());
 	}
+	delete[] strc;
+	return res;
+
 }

@@ -3,8 +3,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
-using namespace std;
-vector<std::string> split(const std::string& str, const std::string& p);
+std::vector<std::string> split(const std::string & str, const std::string & pattern);
 namespace RbsLib::String
 {
 	namespace Convert
