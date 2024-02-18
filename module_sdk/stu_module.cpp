@@ -972,6 +972,7 @@ static void CreateStudent(const RbsLib::Network::HTTP::Request& request)
 	obj.Add("id", student_id);
 	return SendSuccessResponse(request.connection, obj);
 }
+
 static void CreateTeacher(const RbsLib::Network::HTTP::Request& request)
 {
 	neb::CJsonObject obj(request.content.ToString());
@@ -1081,6 +1082,7 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("get_all_students_info", GetAllStudentsInfo);
 	info.Add("create_student", CreateStudent);
 	info.Add("get_all_teachers_info", GetAllTeachersInfo);
+	info.Add("create_teacher", CreateTeacher);
 	//将模块信息返回
 	return info;
 }
