@@ -972,8 +972,7 @@ static void CreateStudent(const RbsLib::Network::HTTP::Request& request)
 	obj.Add("id", student_id);
 	return SendSuccessResponse(request.connection, obj);
 }
-
-static void GetStudentsGradeCSV(const RbsLib::Network::HTTP::Request& request)
+static void CreateTeacher(const RbsLib::Network::HTTP::Request& request)
 {
 	neb::CJsonObject obj(request.content.ToString());
 	RbsLib::Network::HTTP::ResponseHeader header;
@@ -984,11 +983,40 @@ static void GetStudentsGradeCSV(const RbsLib::Network::HTTP::Request& request)
 		return SendError(request.connection, "invailed token", 403);
 	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
 	//检查用户权限
-	//===============================
-	std::string csv;
-	csv = "Account::AccountManager::GetStudentInfo(target_id).name";
-	csv = csv + ",";
-	csv += "\n";
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	std::string name = obj("name");
+	std::string phone_number = obj("phone_number");
+	std::string email = obj("email");
+	std::string sex = obj("sex");
+	std::string password = obj("password");
+	std::string college = obj("college");
+	std::string notes = obj("notes");
+	int permission_level = RbsLib::String::Convert::StringToNumber<int>(obj("permission_level"));
+	//检查名称是否合法
+	if (name.empty())
+		return SendError(request.connection, "姓名不可为空", 422);
+	//检查权限等级是否合法
+	if (permission_level < 0 || permission_level>4)
+		return SendError(request.connection, "权限等级应在0-4之间", 422);
+	//申请教师号
+	std::uint64_t teacher_id = Generator::TeacherIDGenerator();
+	//创建学生
+	try
+	{
+		Account::AccountManager::CreateTeacher(teacher_id, name, sex, email, phone_number,
+			 password, college, notes, permission_level);
+	}
+	catch (const std::exception& e)
+	{
+		Logger::LogError("创建教师[%d]失败：%s", teacher_id, e.what());
+		return SendError(request.connection, "Server error", 500);
+	}
+	Logger::LogInfo("用户[%d:%s]创建了教师[%d:%s]", basic_info.ID, basic_info.name.c_str(),
+		teacher_id, name.c_str());
+	obj.Clear();
+	obj.Add("message", "ok");
+	obj.Add("id", teacher_id);
+	return SendSuccessResponse(request.connection, obj);
 }
 
 
