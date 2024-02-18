@@ -30,7 +30,7 @@ static void SendError(const RbsLib::Network::TCP::TCPConnection& connection,
 	{
 	}
 }
-static void SendSuccessResponse(const RbsLib::Network::TCP::TCPConnection& connection, const neb::CJsonObject & obj)
+static void SendSuccessResponse(const RbsLib::Network::TCP::TCPConnection& connection, const neb::CJsonObject& obj)
 {
 	try
 	{
@@ -56,7 +56,7 @@ static void Login(const RbsLib::Network::HTTP::Request& request)
 		uint64_t id;
 		std::stringstream(obj("ID")) >> id;
 		auto user = Account::LoginManager::Login(id, obj("Password"));
-		Logger::LogInfo("用户[%d:%s]登录成功", user.ID,user.name.c_str());
+		Logger::LogInfo("用户[%d:%s]登录成功", user.ID, user.name.c_str());
 		neb::CJsonObject robj;
 		robj.Add("id", user.ID);
 		robj.Add("token", user.token);
@@ -102,7 +102,7 @@ static void Login(const RbsLib::Network::HTTP::Request& request)
 		request.connection.Send(header.ToBuffer());
 		request.connection.Send(RbsLib::Buffer(json));
 	}
-	
+
 }
 
 static void Logout(const RbsLib::Network::HTTP::Request& request)
@@ -159,7 +159,7 @@ static void GetUserInfo(const RbsLib::Network::HTTP::Request& request)
 	neb::CJsonObject obj(request.content.ToString());
 	RbsLib::Network::HTTP::ResponseHeader header;
 	//检查权限
-	std::uint64_t ID,target_id=0;
+	std::uint64_t ID, target_id = 0;
 	std::stringstream(obj("ID")) >> ID;
 	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
 	{
@@ -168,7 +168,7 @@ static void GetUserInfo(const RbsLib::Network::HTTP::Request& request)
 	}
 	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);
 	std::stringstream(obj("target_id")) >> target_id;
-	if (target_id == 0) return SendError(request.connection,"参数错误",422);
+	if (target_id == 0) return SendError(request.connection, "参数错误", 422);
 	obj.Clear();
 	//获取目标信息
 	if (Generator::IsStudentID(target_id))
@@ -176,7 +176,7 @@ static void GetUserInfo(const RbsLib::Network::HTTP::Request& request)
 		auto target_info = Account::AccountManager::GetStudentInfo(target_id);
 		if ((target_info.is_enable == false && basic_info.permission_level == 0) ||
 			(target_info.is_enable && (target_info.permission_level > basic_info.permission_level ||
-				target_info.id == basic_info.ID||basic_info.permission_level == 0)))
+				target_info.id == basic_info.ID || basic_info.permission_level == 0)))
 		{
 			obj.Add("type", "student");
 			obj.Add("name", target_info.name);
@@ -235,11 +235,11 @@ static void GetStudentSubjects(const RbsLib::Network::HTTP::Request& request)
 	if (target_id == 0) return SendError(request.connection, "参数错误", 422);
 	obj.Clear();
 	//获取目标信息
-	if (Generator::IsStudentID(target_id)&&Account::AccountManager::IsStudentExist(target_id))
+	if (Generator::IsStudentID(target_id) && Account::AccountManager::IsStudentExist(target_id))
 	{
 		auto target_info = Account::AccountManager::GetStudentInfo(target_id);
 		if ((target_info.is_enable == false && basic_info.permission_level == 0) ||
-			(target_info.is_enable&&(target_info.permission_level>basic_info.permission_level||
+			(target_info.is_enable && (target_info.permission_level > basic_info.permission_level ||
 				target_info.id == basic_info.ID || basic_info.permission_level == 0)))
 		{
 			obj.AddEmptySubArray("subjects");
@@ -281,7 +281,8 @@ static void GetStudentSubjects(const RbsLib::Network::HTTP::Request& request)
 				target_info.id, target_info.name.c_str());
 		}
 		else return SendError(request.connection, "permission denied", 403);
-	} else return SendError(request.connection, "permission denied", 403);
+	}
+	else return SendError(request.connection, "permission denied", 403);
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
@@ -348,7 +349,7 @@ static void ChangeName(const RbsLib::Network::HTTP::Request& request)
 		{
 			auto old_name = info.name;
 			info.name = obj("name");
-			if (info.name.empty()) return SendError(request.connection, "名称不可被设置为空",422);
+			if (info.name.empty()) return SendError(request.connection, "名称不可被设置为空", 422);
 			Account::AccountManager::SetStudentProperty(info);
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的名称修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, old_name.c_str(), info.name.c_str());
@@ -399,7 +400,7 @@ static void ChangeSex(const RbsLib::Network::HTTP::Request& request)
 			if (info.sex.empty()) return SendError(request.connection, "性别不可被设置为空", 422);
 			Account::AccountManager::SetStudentProperty(info);
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的性别修改为%s", basic_info.ID, basic_info.name.c_str(),
-				info.id, info.name.c_str(),info.sex.c_str());
+				info.id, info.name.c_str(), info.sex.c_str());
 		}
 		else return SendError(request.connection, "permission denied", 403);
 	}
@@ -563,9 +564,9 @@ static void ChangePassword(const RbsLib::Network::HTTP::Request& request)
 	if (Generator::IsStudentID(target_id) && Account::AccountManager::IsStudentExist(target_id))
 	{
 		auto info = Account::AccountManager::GetStudentInfo(target_id);
-		if (basic_info.permission_level==0||(info.is_enable==true&&info.id == basic_info.ID))
+		if (basic_info.permission_level == 0 || (info.is_enable == true && info.id == basic_info.ID))
 		{
-			if (basic_info.permission_level==0||info.password == obj("old_password"))
+			if (basic_info.permission_level == 0 || info.password == obj("old_password"))
 				info.password = obj("password");
 			else return SendError(request.connection, "密码错误", 403);
 			if (info.phone_number.empty()) return SendError(request.connection, "密码不可被设置为空", 422);
@@ -580,7 +581,7 @@ static void ChangePassword(const RbsLib::Network::HTTP::Request& request)
 		auto info = Account::AccountManager::GetTeacherInfo(target_id);
 		if (basic_info.permission_level == 0 || (info.is_enable == true && info.id == basic_info.ID))
 		{
-			if (basic_info.permission_level == 0||info.password == obj("old_password"))
+			if (basic_info.permission_level == 0 || info.password == obj("old_password"))
 				info.password = obj("password");
 			else return SendError(request.connection, "密码错误", 403);
 			if (info.phone_number.empty()) return SendError(request.connection, "密码不可被设置为空", 422);
@@ -627,7 +628,7 @@ static void ChangePermissionLevel(const RbsLib::Network::HTTP::Request& request)
 			if (info.permission_level < 0 || info.permission_level>4) return SendError(request.connection, "permission_level应在0-4之间", 422);
 			Account::AccountManager::SetStudentProperty(info);
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的权限等级修改为%d", basic_info.ID, basic_info.name.c_str(),
-				info.id, info.name.c_str(),info.permission_level);
+				info.id, info.name.c_str(), info.permission_level);
 		}
 		else return SendError(request.connection, "permission denied", 403);
 	}
@@ -641,7 +642,7 @@ static void ChangePermissionLevel(const RbsLib::Network::HTTP::Request& request)
 				return SendError(request.connection, "未包含permission_level项", 422);
 			}
 			info.permission_level = RbsLib::String::Convert::StringToNumber<int>(obj("permission_level"));
-			if (info.permission_level < 0||info.permission_level>4) return SendError(request.connection, "permission_level应在0-4之间", 422);
+			if (info.permission_level < 0 || info.permission_level>4) return SendError(request.connection, "permission_level应在0-4之间", 422);
 			Account::AccountManager::SetTeacherProperty(info);
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的权限等级修改为%d", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.permission_level);
@@ -719,7 +720,7 @@ static void GetTeacherClasses(const RbsLib::Network::HTTP::Request& request)
 	if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
 	{
 		auto info = Account::AccountManager::GetTeacherInfo(target_id);
-		if ((basic_info.permission_level == 0 || (target_id==basic_info.ID || info.permission_level > basic_info.permission_level) && info.is_enable))
+		if ((basic_info.permission_level == 0 || (target_id == basic_info.ID || info.permission_level > basic_info.permission_level) && info.is_enable))
 		{
 			for (const auto& it : info.classes)
 			{
@@ -877,14 +878,14 @@ static void SetStudentSubjectGrade(const RbsLib::Network::HTTP::Request& request
 		{
 			Account::SubjectInfo::Student stu;
 			std::stringstream(obj("grade")) >> stu.grade;
-			if (stu.grade>100||stu.grade<-1) return SendError(request.connection, "成绩不合法", 422);
+			if (stu.grade > 100 || stu.grade < -1) return SendError(request.connection, "成绩不合法", 422);
 			stu.notes = it.notes;
 			stu.id = student_id;
 			Account::SubjectManager::SetStudentProperty(subject_id, stu);
 			obj.Clear();
 			obj.Add("message", "ok");
 			Logger::LogInfo("用户[%d:%s]设置了课程[%d:%s]中学生[%d]的成绩为%d", basic_info.ID, basic_info.name.c_str(),
-				subject_info.id,subject_info.name.c_str(), student_id, stu.grade);
+				subject_info.id, subject_info.name.c_str(), student_id, stu.grade);
 			return SendSuccessResponse(request.connection, obj);
 		}
 	}
@@ -957,7 +958,7 @@ static void CreateStudent(const RbsLib::Network::HTTP::Request& request)
 	//创建学生
 	try
 	{
-		Account::AccountManager::CreateStudent(student_id, name, phone_number,email, sex,
+		Account::AccountManager::CreateStudent(student_id, name, phone_number, email, sex,
 			enrollment_date, password, college, class_name, notes, permission_level);
 	}
 	catch (const std::exception& e)
@@ -976,7 +977,6 @@ static void CreateStudent(const RbsLib::Network::HTTP::Request& request)
 static void CreateTeacher(const RbsLib::Network::HTTP::Request& request)
 {
 	neb::CJsonObject obj(request.content.ToString());
-	RbsLib::Network::HTTP::ResponseHeader header;
 	//检查登录信息
 	std::uint64_t ID, target_id = 0;
 	std::stringstream(obj("ID")) >> ID;
@@ -1004,8 +1004,8 @@ static void CreateTeacher(const RbsLib::Network::HTTP::Request& request)
 	//创建学生
 	try
 	{
-		Account::AccountManager::CreateTeacher(teacher_id, name, sex, email, phone_number,
-			 password, college, notes, permission_level);
+		Account::AccountManager::CreateTeacher(teacher_id, name,
+			phone_number, email, sex, college, password, notes, permission_level);
 	}
 	catch (const std::exception& e)
 	{
@@ -1068,7 +1068,7 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("get_all_subjects", GetAllSubjects);
 	info.Add("change_name", ChangeName);
 	info.Add("change_sex", ChangeSex);
-	info.Add("change_phone_number",ChangePhoneNumber);
+	info.Add("change_phone_number", ChangePhoneNumber);
 	info.Add("change_enrollment_date", ChangeEnrollmentDate);
 	info.Add("change_college", ChangeCollege);
 	info.Add("change_password", ChangePassword);

@@ -86,8 +86,8 @@ namespace Account
 		static void CreateTeacher(
 			std::uint64_t ID,
 			const std::string& name, 
-			const std::string& teacher_sex, const std::string & email,
-			const std::string& phone_number,
+			const std::string& phonenumber, const std::string & email,
+			const std::string& sex,
 			const std::string & college,
 			const std::string& pass_word, 
 			const std::string & notes, int permission_level
