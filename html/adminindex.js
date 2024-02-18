@@ -35,7 +35,7 @@ window.onload = function () {
         });
 }
 function jump_to_login() {
-    location.href = "login.html";
+    location.href = "adminlogin.html";
 }
 function logout() {
     var id = localStorage.getItem("id");
