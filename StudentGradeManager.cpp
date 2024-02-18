@@ -10,8 +10,8 @@
 #include "log/logger.h"
 #include "configuration_manager/configuration_manager.h"
 #include "rbslib/FileIO.h"
-using namespace std;
 #include <memory>
+using namespace std;
 
 static std::jmp_buf buf;
 static bool IsExitProgram = false;
@@ -104,17 +104,12 @@ int main()
 					x.Send(header.ToBuffer());
 					x.Send(buffer);
 				}
-				catch (std::exception const& ex)
-				{
-					cout << ex.what() << endl;
-					x.Send(header.ToBuffer());
-					x.Send(not_found_content);
-				}
 				catch (const std::exception& ex)
 				{
 					Logger::LogWarn("模块%s.%s抛出异常:%s", m[1].str().c_str(), m[2].str().c_str(), ex.what());
+					x.Send(header.ToBuffer());
+					x.Send(not_found_content);
 				}
-
 			}
 			else
 			{

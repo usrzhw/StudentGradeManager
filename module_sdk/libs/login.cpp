@@ -73,6 +73,7 @@ auto Account::LoginManager::GetOnlineUserInfo(std::uint64_t ID) -> User
 	std::shared_lock<std::shared_mutex> lock(Mutex);
 	auto p = Online_Users.find(ID);
 	if (p != Online_Users.end()) return p->second;
+	else throw LoginManagerException("Not found this user");
 }
 
 void Account::LoginManager::Logout(std::uint64_t ID)
