@@ -48,122 +48,122 @@ int main()
 	std::signal(SIGPIPE, SignalHandle);
 	std::signal(SIGINT, SignalHandle);
 	std::signal(SIGSEGV, SignalHandle);
+
+	//读取配置文件
+	Logger::LogInfo("读取配置文件");
+	try
 	{
-		//读取配置文件
-		Logger::LogInfo("读取配置文件");
-		try
-		{
-			Config::LoadConfig();
-		}
-		catch (std::exception const& ex)
-		{
-			Logger::LogError("读取配置文件失败: %s", ex.what());
-			Logger::LogWarn("使用默认设置启动");
-			Logger::LogInfo("保存默认的配置文件");
-			Config::SaveConfig();
-		}
-		Logger::LogInfo("端口设置为: %d", Config::Port());
-		RbsLib::Network::HTTP::HTTPServer server(Config::Port());
-		Module::ModuleManager module_manager;
-		Logger::LogInfo("模块路径设置为: %s", Config::ModulePath().c_str());
-		module_manager.LoadModules(RbsLib::Storage::StorageFile(Config::ModulePath()));
-		server.SetGetHandle([&module_manager](const RbsLib::Network::TCP::TCPConnection& x, RbsLib::Network::HTTP::RequestHeader& h) {
-			std::cmatch m;
-			RbsLib::Network::HTTP::ResponseHeader header;
-			header.status = 404;
-			header.status_descraption = "not found";
-			header.headers.AddHeader("Content-Length", "3");
-			header.headers.AddHeader("Content-Type", "text/plain");
-			RbsLib::Buffer not_found_content(4);
-			not_found_content.SetData("404", 3);
+		Config::LoadConfig();
+	}
+	catch (std::exception const& ex)
+	{
+		Logger::LogError("读取配置文件失败: %s", ex.what());
+		Logger::LogWarn("使用默认设置启动");
+		Logger::LogInfo("保存默认的配置文件");
+		Config::SaveConfig();
+	}
+	Logger::LogInfo("端口设置为: %d", Config::Port());
+	RbsLib::Network::HTTP::HTTPServer server(Config::Port());
+	Module::ModuleManager module_manager;
+	Logger::LogInfo("模块路径设置为: %s", Config::ModulePath().c_str());
+	module_manager.LoadModules(RbsLib::Storage::StorageFile(Config::ModulePath()));
+	server.SetGetHandle([&module_manager](const RbsLib::Network::TCP::TCPConnection& x, RbsLib::Network::HTTP::RequestHeader& h) {
+		std::cmatch m;
+		RbsLib::Network::HTTP::ResponseHeader header;
+		header.status = 404;
+		header.status_descraption = "not found";
+		header.headers.AddHeader("Content-Length", "3");
+		header.headers.AddHeader("Content-Type", "text/plain");
+		RbsLib::Buffer not_found_content(4);
+		not_found_content.SetData("404", 3);
 
-			if (true == std::regex_match(h.path.c_str(), m, std::regex("^/app/(\\w+).(\\w+)$")))
+		if (true == std::regex_match(h.path.c_str(), m, std::regex("^/app/(\\w+).(\\w+)$")))
+		{
+			try
 			{
-				try
-				{
-					module_manager.GetAction(m[1], m[2])(RbsLib::Network::HTTP::Request(x, h, RbsLib::Buffer(1)));
-				}
-				catch (Module::ModuleLoaderException const& ex)
-				{
-					cout << ex.what() << endl;
-					x.Send(header.ToBuffer());
-					x.Send(not_found_content);
-				}
+				module_manager.GetAction(m[1], m[2])(RbsLib::Network::HTTP::Request(x, h, RbsLib::Buffer(1)));
 			}
-			else if (true == std::regex_match(h.path.c_str(), m, std::regex("^/html/(\\S+)$")))
+			catch (Module::ModuleLoaderException const& ex)
 			{
-				try
-				{
-					auto buffer = RbsLib::Storage::StorageFile("html")[RbsLib::Storage::StorageFile(m[1]).GetName()].Open(RbsLib::Storage::FileIO::OpenMode::Read,
-						RbsLib::Storage::FileIO::SeekBase::begin).Read(1024 * 1024);
-					RbsLib::Network::HTTP::ResponseHeader header;
-					header.status = 200;
-					header.status_descraption = "ok";
-					header.headers.AddHeader("Content-Length", std::to_string(buffer.GetLength()));
-					header.headers.AddHeader("Content-Type", "text/html");
-					x.Send(header.ToBuffer());
-					x.Send(buffer);
-				}
-				catch (const std::exception& ex)
-				{
-					Logger::LogWarn("模块%s.%s抛出异常:%s", m[1].str().c_str(), m[2].str().c_str(), ex.what());
-					x.Send(header.ToBuffer());
-					x.Send(not_found_content);
-				}
-			}
-			else
-			{
+				Logger::LogWarn("模块%s.%s抛出异常:%s", m[1].str().c_str(), m[2].str().c_str(), ex.what());
 				x.Send(header.ToBuffer());
 				x.Send(not_found_content);
 			}
-			});
-		server.SetPostHandle([&module_manager](const RbsLib::Network::TCP::TCPConnection& x, RbsLib::Network::HTTP::RequestHeader& h, const RbsLib::Buffer& buffer) {
-			std::cmatch m;
-			RbsLib::Network::HTTP::ResponseHeader header;
-			header.status = 404;
-			header.status_descraption = "not found";
-			header.headers.AddHeader("Content-Length", "3");
-			header.headers.AddHeader("Content-Type", "text/plain");
-			RbsLib::Buffer not_found_content(4);
-			not_found_content.SetData("404", 3);
-			auto debug = buffer.ToString();
-
-			if (true == std::regex_match(h.path.c_str(), m, std::regex("^/app/(\\w+).(\\w+)$")))
+		}
+		else if (true == std::regex_match(h.path.c_str(), m, std::regex("^/html/(\\S+)$")))
+		{
+			try
 			{
-				try
-				{
-					module_manager.GetAction(m[1], m[2])(RbsLib::Network::HTTP::Request(x, h, buffer));
-				}
-				catch (Module::ModuleLoaderException const& ex)
-				{
-					cout << ex.what() << endl;
-					x.Send(header.ToBuffer());
-					x.Send(not_found_content);
-				}
-				catch (const std::exception& ex)
-				{
-					Logger::LogWarn("模块%s.%s抛出异常:%s", m[1].str().c_str(), m[2].str().c_str(), ex.what());
-				}
+				auto buffer = RbsLib::Storage::StorageFile("html")[RbsLib::Storage::StorageFile(m[1]).GetName()].Open(RbsLib::Storage::FileIO::OpenMode::Read,
+					RbsLib::Storage::FileIO::SeekBase::begin).Read(static_cast<int64_t>(1024) * 1024);
+				RbsLib::Network::HTTP::ResponseHeader header;
+				header.status = 200;
+				header.status_descraption = "ok";
+				header.headers.AddHeader("Content-Length", std::to_string(buffer.GetLength()));
+				header.headers.AddHeader("Content-Type", "text/html");
+				x.Send(header.ToBuffer());
+				x.Send(buffer);
 			}
-			else
+			catch (const std::exception& ex)
 			{
+				Logger::LogWarn("加载网页%s时抛出异常:%s", m[1].str().c_str(), ex.what());
 				x.Send(header.ToBuffer());
 				x.Send(not_found_content);
 			}
-
-			});
-		try
+		}
+		else
 		{
-			if (!setjmp(buf))
+			x.Send(header.ToBuffer());
+			x.Send(not_found_content);
+		}
+		});
+	server.SetPostHandle([&module_manager](const RbsLib::Network::TCP::TCPConnection& x, RbsLib::Network::HTTP::RequestHeader& h, const RbsLib::Buffer& buffer) {
+		std::cmatch m;
+		RbsLib::Network::HTTP::ResponseHeader header;
+		header.status = 404;
+		header.status_descraption = "not found";
+		header.headers.AddHeader("Content-Length", "3");
+		header.headers.AddHeader("Content-Type", "text/plain");
+		RbsLib::Buffer not_found_content(4);
+		not_found_content.SetData("404", 3);
+		auto debug = buffer.ToString();
+
+		if (true == std::regex_match(h.path.c_str(), m, std::regex("^/app/(\\w+).(\\w+)$")))
+		{
+			try
 			{
-				server.LoopWait();
+				module_manager.GetAction(m[1], m[2])(RbsLib::Network::HTTP::Request(x, h, buffer));
+			}
+			catch (Module::ModuleLoaderException const& ex)
+			{
+				Logger::LogWarn("模块%s.%s抛出异常:%s", m[1].str().c_str(), m[2].str().c_str(), ex.what());
+				x.Send(header.ToBuffer());
+				x.Send(not_found_content);
+			}
+			catch (const std::exception& ex)
+			{
+				Logger::LogWarn("已引发异常:%s", ex.what());
 			}
 		}
-		catch (const std::exception& ex)
+		else
 		{
-			Logger::LogError("HTTP服务核心错误: %s", ex.what());
+			x.Send(header.ToBuffer());
+			x.Send(not_found_content);
+		}
+
+		});
+	try
+	{
+		if (!setjmp(buf))
+		{
+			server.LoopWait();
 		}
 	}
+	catch (const std::exception& ex)
+	{
+		Logger::LogError("HTTP服务核心错误: %s", ex.what());
+	}
+
 	Logger::LogInfo("程序已退出");
 	return 0;
 }
