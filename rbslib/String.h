@@ -1,11 +1,10 @@
 #pragma once
 #include "BaseType.h"
 #include <string>
-#include <iostream>
 #include <vector>
-std::vector<std::string> split(const std::string & str, const std::string & pattern);
 namespace RbsLib::String
 {
+	std::vector<std::string> split(const std::string& str, const std::string& pattern);
 	namespace Convert
 	{
 		template <typename T>
