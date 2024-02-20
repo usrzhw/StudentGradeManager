@@ -1078,7 +1078,40 @@ static void GetAllClasses(const RbsLib::Network::HTTP::Request& request)
 	Logger::LogInfo("用户[%d:%s]获取了所有班级信息", basic_info.ID, basic_info.name.c_str());
 	return SendSuccessResponse(request.connection, obj);
 }
+static void CreateSubject(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	int start = RbsLib::String::Convert::StringToNumber<int>(obj("start"));
+	int end = RbsLib::String::Convert::StringToNumber<int>(obj("end"));
+	int semester = RbsLib::String::Convert::StringToNumber<int>(obj("semester"));
+	std::string name = obj("name");
+	std::string class_room = obj("class_room");
+	std::string description = obj("description");
+	if (name.empty()) return SendError(request.connection, "课程名称不能为空", 422);
+	std::uint64_t subject_id = Generator::SubjectGenerator();
+	try
+	{
 
+		Account::SubjectManager::CreateSubject(subject_id, name, start, end, semester,
+			class_room, description);
+	}
+	catch (const std::exception& ex)
+	{
+		Logger::LogError("创建课程失败");
+	}
+	obj.Clear();
+	obj.Add("id", subject_id);
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
 static void CreateClass(const RbsLib::Network::HTTP::Request& request)
 {
 	neb::CJsonObject obj(request.content.ToString());
