@@ -50,6 +50,7 @@ namespace Account
 		std::string name;
 		int semester_start;
 		int semester_end;
+		int semester;
 		std::string classroom;
 		std::string description;
 		std::vector<std::uint64_t> teachers;
@@ -119,7 +120,9 @@ namespace Account
 			std::uint64_t subject_id,
 			const std::string& subject_name,
 			int begin_year,
-			int end_year, const std::string & classroom, const std::string& description
+			int end_year, 
+			int semester
+			,const std::string & classroom, const std::string& description
 			);
 		static void AddStudent(std::uint64_t student_id, std::uint64_t subject_id, const std::string & notes);
 		static void AddTeacher(std::uint64_t teacher, std::uint64_t subject_id);
