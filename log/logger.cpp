@@ -2,6 +2,14 @@
 #include <time.h>
 #include <cstdarg>
 #include <cstdio>
+
+static void WriteFrmtd(FILE* stream, const char* format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	vfprintf(stream, format, args);
+	va_end(args);
+}
 void Logger::print_log(int level, const char* log_format, va_list lst)
 {
 	switch (level)
@@ -11,6 +19,10 @@ void Logger::print_log(int level, const char* log_format, va_list lst)
 	case 1:
 	case 0:
 		vprintf(log_format, lst);
+		FILE* fp;
+		fp = fopen(log_format, "w");
+		WriteFrmtd(fp, log_format);
+		fclose(fp);
 	default:
 		break;
 	}
