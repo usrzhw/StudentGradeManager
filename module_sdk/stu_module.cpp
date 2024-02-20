@@ -1024,7 +1024,6 @@ static void CreateTeacher(const RbsLib::Network::HTTP::Request& request)
 static void GetAllTeachersInfo(const RbsLib::Network::HTTP::Request& request)
 {
 	neb::CJsonObject obj(request.content.ToString());
-	RbsLib::Network::HTTP::ResponseHeader header;
 	//检查权限
 	std::uint64_t ID, target_id = 0;
 	std::stringstream(obj("ID")) >> ID;
@@ -1047,6 +1046,69 @@ static void GetAllTeachersInfo(const RbsLib::Network::HTTP::Request& request)
 		obj["teachers"].Add(subobj);
 	}
 	Logger::LogInfo("用户[%d:%s]获取了所有教师信息", basic_info.ID, basic_info.name.c_str());
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void GetAllClasses(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
+	obj.AddEmptySubArray("classes");
+	auto list = Account::ClassesManager::GetAllClassInfo();
+	for (const auto& it : list)
+	{
+		neb::CJsonObject subobj;
+		subobj.Add("class_name", it.name);
+		subobj.Add("create_time", it.create_time);
+		subobj.Add("teacher_id", std::to_string(it.teacher_id));
+		subobj.Add("teacher_name", Account::AccountManager::GetTeacherInfo(it.teacher_id).name);
+		subobj.Add("students_number", it.students.size());
+		obj["classes"].Add(subobj);
+	}
+	obj.Add("message", "ok");
+	Logger::LogInfo("用户[%d:%s]获取了所有班级信息", basic_info.ID, basic_info.name.c_str());
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void CreateClass(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	std::string class_name = obj("class_name");
+	std::uint64_t teacher_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("teacher_id"));
+	if (Account::AccountManager::IsTeacherExist(teacher_id) == false)
+		return SendError(request.connection, "教师不存在", 422);
+	if (Account::ClassesManager::IsClassExist(class_name))
+		return SendError(request.connection, "班级已存在", 422);
+	if (class_name.empty())
+		return SendError(request.connection, "班级名不可为空", 422);
+	try
+	{
+		Account::ClassesManager::CreateClass(class_name, teacher_id);
+	}
+	catch (const std::exception& e)
+	{
+		Logger::LogError("创建班级[%s]失败：%s", class_name.c_str(), e.what());
+		return SendError(request.connection, "Server error", 500);
+	}
+	Logger::LogInfo("用户[%d:%s]创建了班级[%s]", basic_info.ID, basic_info.name.c_str(), class_name.c_str());
+	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
@@ -1083,6 +1145,8 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("create_student", CreateStudent);
 	info.Add("get_all_teachers_info", GetAllTeachersInfo);
 	info.Add("create_teacher", CreateTeacher);
+	info.Add("get_all_classes_info", GetAllClasses);
+	info.Add("create_class", CreateClass);
 	//将模块信息返回
 	return info;
 }

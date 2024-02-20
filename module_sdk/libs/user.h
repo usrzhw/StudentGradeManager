@@ -110,6 +110,7 @@ namespace Account
 		static void DeleteClass(const std::string& class_name);
 		static bool IsClassExist(const std::string& class_name);
 		static auto GetClassInfo(const std::string& class_name)->ClassInfo;
+		static auto GetAllClassInfo(void)->std::vector<ClassInfo>;
 	};
 	class SubjectManager
 	{

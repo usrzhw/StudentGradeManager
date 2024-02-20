@@ -470,6 +470,22 @@ auto Account::ClassesManager::GetClassInfo(const std::string& class_name) -> Cla
 	return ret;
 }
 
+auto Account::ClassesManager::GetAllClassInfo(void) -> std::vector<ClassInfo>
+{
+	std::shared_lock<std::shared_mutex> lock(Global_Classes_Mutex);
+	std::vector<ClassInfo> ret;
+	using namespace RbsLib::Storage;
+	StorageFile file(CLASSES_FILE);
+	if (file.IsExist() == false) throw AccountException("Class not found");
+	neb::CJsonObject obj(file.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
+	std::string class_name;
+	while (obj.GetKey(class_name))
+	{
+		ret.push_back(GetClassInfo(class_name));
+	}
+	return ret;
+}
+
 
 void Account::SubjectManager::CreateSubject(std::uint64_t subject_id, const std::string& subject_name, int begin_year, int end_year, const std::string & classroom, const std::string& description)
 {

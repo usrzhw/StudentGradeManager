@@ -3,13 +3,35 @@
 }
 
 function item_click(e) {
-    switch_to_students(e.textContent);
+    switch_to_students(e.firstElementChild.textContent);
+}
+
+function up(x, y) {
+    return Number(x.id) - Number(y.id);
+}
+async function RequestJson(url, body) {
+    return fetch(url,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: body,
+            mode: 'no-cors'
+        }).then(async Response => {
+            if (Response.ok == false) {
+                throw new Error((await Response.json()).message);
+            }
+            else {
+                return Response.json();
+            }
+        });
 }
 function switch_to_classes() {
-    document.getElementById("chose_bar").innerHTML = "";
+    document.getElementById("chose_bar").innerHTML = "<button onclick=\"CreateClassButton()\" class=\"back_button\">创建班级</button>";
     document.getElementById("FormBody").innerHTML = "";
-    document.getElementById("FormHeader").innerHTML = "<tr><th>班级列表</th></tr>"
-    fetch("/app/stu.get_teacher_classes",
+    document.getElementById("FormHeader").innerHTML = "<tr><th>班级名称</th><th>班主任</th><th>创建时间</th><th>学生数量</th></tr>"
+    fetch("/app/stu.get_all_classes_info",
         {
             method: "POST",
             headers: {
@@ -18,7 +40,6 @@ function switch_to_classes() {
             body: JSON.stringify({
                 ID: localStorage.getItem("id"),
                 token: localStorage.getItem("token"),
-                target_id: localStorage.getItem("id")
             }),
             mode: 'no-cors'
         }).then(Response => {
@@ -30,8 +51,11 @@ function switch_to_classes() {
         }).then(json_data => {
             for (var it of json_data.classes) {
                 var str = "" +
-                    "<tr>" +
-                    "<td onclick=\"item_click(this)\">" + it + "</td>" +
+                    "<tr onclick=\"item_click(this)\">" +
+                    "<td>" + it.class_name + "</td>" +
+                    "<td>" + it.teacher_name + "</td>" +
+                    "<td>" + it.create_time + "</td>" +
+                    "<td>" + it.students_number + "</td>" +
                     "</tr>";
                 document.getElementById("FormBody").innerHTML += str;
             }
@@ -43,7 +67,7 @@ function switch_to_students(class_name) {
     document.getElementById("FormBody").innerHTML = "";
     document.getElementById("FormHeader").innerHTML = "<tr><th>学号</th><th>姓名</th></tr>"
     document.getElementById("chose_bar").innerHTML = "<button onclick=\"switch_to_classes()\" class=\"back_button\">返回</button>"
-    fetch("/app/stu.get_class_info",
+    fetch("http://127.0.0.1:8081/app/stu.get_class_info",
         {
             method: "POST",
             headers: {
@@ -144,6 +168,29 @@ async function ShowStudentInfo(e) {
 }
 
 function Close() {
+    document.getElementById("AddClassDialog").close();
     document.getElementById("StudentGrades").close();
+}
+
+function CreateClassButton() {
+    document.getElementById("AClassName").value = "";
+    document.getElementById("ATeacherID").value = "";
+    document.getElementById("AddClassDialog").showModal();
+}
+
+async function CreateClass() {
+var class_name = document.getElementById("AClassName").value;
+    var teacher_id = document.getElementById("ATeacherID").value;
+    var result = await RequestJson("/app/stu.create_class",
+        JSON.stringify({
+            ID: localStorage.getItem("id"),
+            token: localStorage.getItem("token"),
+            class_name: class_name,
+            teacher_id: teacher_id
+        })).catch(error => {
+            alert(error.toString());
+        });
+    Close();
+    switch_to_classes();
 }
 
