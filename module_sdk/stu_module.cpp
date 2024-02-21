@@ -306,7 +306,7 @@ static void GetAllSubjects(const RbsLib::Network::HTTP::Request& request)
 	{
 		neb::CJsonObject subobj;
 		subobj.Add("name", info.name);
-		subobj.Add("ID", info.id);
+		subobj.Add("id", info.id);
 		subobj.Add("classroom", info.classroom);
 		subobj.Add("start", info.semester_start);
 		subobj.Add("end", info.semester_end);
@@ -1146,6 +1146,43 @@ static void CreateClass(const RbsLib::Network::HTTP::Request& request)
 	return SendSuccessResponse(request.connection, obj);
 }
 
+static void AddMemberToSubject(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	std::uint64_t member_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("member_id"));
+	std::uint64_t subject_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("subject_id"));
+	//检查课程是否存在
+	if (!Generator::IsSubjectID(subject_id) || !Account::SubjectManager::IsSubjectExist(subject_id))
+		return SendError(request.connection, "课程不存在", 422);
+	if (Generator::IsStudentID(member_id) && Account::AccountManager::IsStudentExist(member_id))
+	{
+		//目标成员是学生
+		auto info = Account::AccountManager::GetStudentInfo(member_id);
+		if (std::find(info.subjects.begin(),info.subjects.end(),subject_id)!=info.subjects.end())
+			return SendError(request.connection, "该学生已在课程中", 422);
+		Account::SubjectManager::AddStudent(member_id, subject_id, obj("notes"));
+	}
+	else if (Generator::IsTeacherID(member_id) && Account::AccountManager::IsTeacherExist(member_id))
+	{
+		auto info = Account::AccountManager::GetTeacherInfo(member_id);
+		if (std::find(info.subjects.begin(), info.subjects.end(), subject_id) != info.subjects.end())
+			return SendError(request.connection, "该教师已在课程中", 422);
+		Account::SubjectManager::AddTeacher(member_id, subject_id);
+	}
+	else return SendError(request.connection, "目标用户不存在", 422);
+	obj.Clear();
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
 
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
 ModuleSDK::ModuleInfo Init(void)
@@ -1180,6 +1217,8 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("create_teacher", CreateTeacher);
 	info.Add("get_all_classes_info", GetAllClasses);
 	info.Add("create_class", CreateClass);
+	info.Add("create_subject", CreateSubject);
+	info.Add("add_member_to_subject", AddMemberToSubject);
 	//将模块信息返回
 	return info;
 }

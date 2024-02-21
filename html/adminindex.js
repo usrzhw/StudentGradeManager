@@ -70,6 +70,8 @@ function on_item_click(e) {
         frame.src = "admintec.html";
     else if (e.text == "班级管理")
         frame.src = "adminclasses.html";
+    else if (e.text == "课程管理")
+        frame.src = "adminsubjects.html";
     else if (e.text == "账号管理")
         frame.src = "self_account.html";
     var list = document.querySelectorAll("li a");

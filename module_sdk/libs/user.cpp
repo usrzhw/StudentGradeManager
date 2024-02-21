@@ -518,6 +518,12 @@ void Account::SubjectManager::AddStudent(std::uint64_t student_id, std::uint64_t
 	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
 	auto fp = file.Open(OpenMode::Read, SeekBase::begin);
 	neb::CJsonObject json(fp.Read(file.GetFileSize()).ToString());
+	for (int i = 0; i < json["StudentsID"].GetArraySize(); ++i)
+	{
+		std::uint64_t temp = 0;
+		json["StudentsID"][i].Get("ID", temp);
+		if (temp == student_id) throw AccountException("Student is already in the subject");
+	}
 	neb::CJsonObject sub;
 	sub.Add("ID", student_id);
 	sub.Add("Grade", -1);
@@ -539,6 +545,12 @@ void Account::SubjectManager::AddTeacher(std::uint64_t teacher_id, std::uint64_t
 	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
 	auto fp = file.Open(OpenMode::Read, SeekBase::begin);
 	neb::CJsonObject json(fp.Read(file.GetFileSize()).ToString());
+	for (int i = 0; i < json["TeacherID"].GetArraySize(); ++i)
+	{
+		std::uint64_t temp = 0;
+		json["TeacherID"].Get(i, temp);
+		if (temp == teacher_id) throw AccountException("Teacher is already in the subject");
+	}
 	if (json["TeacherID"].Add(teacher_id) == false)
 		throw AccountException("Add teacher to subject failed");
 	AddSubjectToTeacher(subject_id, teacher_id);
