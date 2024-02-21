@@ -2,6 +2,9 @@
 #include <time.h>
 #include <cstdarg>
 #include <cstdio>
+#include <ctime>
+#include <iostream>
+using namespace std;
 
 static void WriteFrmtd(FILE* stream, const char* format, ...)
 {
@@ -12,6 +15,16 @@ static void WriteFrmtd(FILE* stream, const char* format, ...)
 }
 void Logger::print_log(int level, const char* log_format, va_list lst)
 {
+	time_t timep;
+	struct tm* p;
+	char name[256] = { 0 };
+
+	time(&timep);
+	p = localtime(&timep);
+
+	sprintf(name, "%d-%d-%d %d£º%02d.txt", 1900 + p->tm_year, 1 + p->tm_mon, p->tm_mday, p->tm_hour, p->tm_min);
+
+
 	switch (level)
 	{
 	case 3:
@@ -20,7 +33,7 @@ void Logger::print_log(int level, const char* log_format, va_list lst)
 	case 0:
 		vprintf(log_format, lst);
 		FILE* fp;
-		fp = fopen(log_format, "w");
+		fp = fopen(name, "a+");
 		WriteFrmtd(fp, log_format);
 		fclose(fp);
 	default:
