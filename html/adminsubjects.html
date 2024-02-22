@@ -8,6 +8,8 @@
             flex-direction: column;
             align-items: center;
             justify-items: start;
+            margin-left: 0;
+            margin-right: 0;
         }
 
         .title {
@@ -19,8 +21,9 @@
             background-color: rgb(238, 238, 238);
             height: 5vh;
             display: flex;
-            align-items:center;
+            align-items: center;
             flex-direction: row-reverse;
+            max-width: 100%;
         }
 
         table {
@@ -67,6 +70,15 @@
             cursor: pointer;
         }
 
+        .delete_button {
+            background-color: red;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
         .button_in_item {
             background-color: white;
             padding: 10px 15px;
@@ -76,21 +88,6 @@
             box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
             margin: 5px;
         }
-        #StudentInfo {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-items: center;
-            margin-top: 2vh;
-            box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
-            text-align:center;
-        }
-        .item {
-            border-bottom: 1px solid #dedede; /* 表格横线 */
-            padding: 2vh;
-            width: 60vw;
-            text-align: center;
-        }
     </style>
     <script src="adminsubjects.js"></script>
 </head>
@@ -99,7 +96,7 @@
     <h1 class="title">课程管理</h1>
     <div id="chose_bar">
     </div>
-    <div id="from_bar">
+    <div>
         <table id="subjects_from" style="width: 80vw;text-align: center;">
             <thead>
                 <tr id="FormHeader">
@@ -114,9 +111,8 @@
         <div style="display: flex;flex-direction: column; align-items:center;">
             <label for="opwd">成绩</label>
             <input type="number" name="opwd" id="grade_box" />
-            <label for="npwd">备注</label>
-            <input type="number" name="npwd" id="note_box" />
             <button onclick="make_sure_change()" class="right_button" style="width: 50vw; margin: 5px;">提交</button>
+            <button onclick="RemoveStudentButtonClick()" class="delete_button" style="width: 50vw; margin: 5px;">移除</button>
             <button onclick="Close()" class="right_button" style="width: 50vw; margin: 5px; background-color: gray; color: black; ">取消</button>
         </div>
     </dialog>
@@ -140,11 +136,18 @@
     </dialog>
     <dialog id="AddStudentDialog">
         <div style="display: flex;flex-direction: column; align-items:center;">
-            <label for="opwd">学号</label>
+            <label for="opwd">学号/工号</label>
             <input type="number" name="opwd" id="Agrade_box" />
-            <label for="npwd">备注</label>
+            <label for="npwd">备注(添加教师时此项无效)</label>
             <input type="number" name="npwd" id="Anote_box" />
             <button onclick="AddStudent()" class="right_button" style="width: 50vw; margin: 5px;">提交</button>
+            <button onclick="Close()" class="right_button" style="width: 50vw; margin: 5px; background-color: gray; color: black; ">取消</button>
+        </div>
+    </dialog>
+    <dialog id="RemoveTeacherDialog">
+        <div style="display: flex;flex-direction: column; align-items:center;">
+            <div>确定要删除该教师吗</div>
+            <button onclick="RemoveTeacherButtonClick()" class="delete_button" style="width: 50vw; margin: 5px;">移除</button>
             <button onclick="Close()" class="right_button" style="width: 50vw; margin: 5px; background-color: gray; color: black; ">取消</button>
         </div>
     </dialog>

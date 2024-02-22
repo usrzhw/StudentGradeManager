@@ -6,6 +6,8 @@ window.onload = function () {
 function item_click(e) {
     if (e.textContent == "管理学生")
         switch_to_students(e.parentNode.parentNode.firstElementChild.textContent);
+    else if (e.textContent == "管理教师")
+        switch_to_teachers(e.parentNode.parentNode.firstElementChild.textContent);
 }
 
 function up_sort_subjects(x, y) {
@@ -34,6 +36,7 @@ function down(x, y) {
 }
 var last_open_student = 0;
 var last_open_subject = 0;
+var last_open_page = 0;
 function switch_to_subjects() {
     document.getElementById("ButtomDiv").textContent = "";
     document.getElementById("chose_bar").innerHTML = "<button onclick=\"ShowCreateSubjectDialog()\" class=\"back_button\">创建课程</button>";
@@ -75,11 +78,10 @@ function switch_to_students(subject_id) {
     document.getElementById("ButtomDiv").textContent = "";
     document.getElementById("FormBody").innerHTML = "";
     document.getElementById("FormHeader").innerHTML = "<tr><th>学号</th><th>姓名</th><th>成绩</th><th>备注</th></tr>"
-    document.getElementById("chose_bar").innerHTML = "<div style=\"margin-right:auto;margin-left: 5vw;\">成绩-1表示未登记成绩</div>"
     document.getElementById("chose_bar").innerHTML = "<button onclick=\"switch_to_subjects()\" class=\"back_button\">返回</button>";
     document.getElementById("chose_bar").innerHTML += "<button onclick=\"OpenAddStudentDialog()\" class=\"back_button\">添加学生</button>";
-    
     document.getElementById("chose_bar").innerHTML += "<div style=\"margin-right:auto;margin-left: 5vw;\">成绩-1表示未登记成绩</div>"
+    last_open_page = 1;
     fetch("/app/stu.get_subject_info",
         {
             method: "POST",
@@ -119,10 +121,55 @@ function switch_to_students(subject_id) {
         }).catch(error => {
         });
 }
+
+function switch_to_teachers(subject_id) {
+    document.getElementById("ButtomDiv").textContent = "";
+    document.getElementById("FormBody").innerHTML = "";
+    document.getElementById("FormHeader").innerHTML = "<tr><th>工号</th><th>姓名</th></tr>"
+    document.getElementById("chose_bar").innerHTML = "<button onclick=\"switch_to_subjects()\" class=\"back_button\">返回</button>";
+    document.getElementById("chose_bar").innerHTML += "<button onclick=\"OpenAddStudentDialog()\" class=\"back_button\">添加教师</button>";
+    last_open_page = 2;
+
+    fetch("/app/stu.get_subject_info",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                ID: localStorage.getItem("id"),
+                token: localStorage.getItem("token"),
+                subject_id: subject_id
+            }),
+            mode: 'no-cors'
+        }).then(Response => {
+            if (Response.ok == false)
+                throw new Error("Network error");
+            else {
+                return Response.json();
+            }
+        }).then(json_data => {
+            var sum = 0;
+            var count = 0;
+            json_data.students.sort(down);
+            for (var it of json_data.teachers) {
+                var str = "" +
+                    "<tr onclick=\"ShowRemoveTeacherDialog(this)\">" +
+                    "<td>" + it.id + "</td>" +
+                    "<td>" + it.name + "</td>" +
+                    "</tr>";
+                document.getElementById("FormBody").innerHTML += str;
+                if (it.grade >= 0)
+                    sum += it.grade, ++count;
+            }
+            document.getElementById("ButtomDiv").textContent = "";
+            last_open_subject = subject_id;
+        }).catch(error => {
+        });
+}
 async function SetStudentGrade(e) {
     document.getElementById("grade_box").value = e.children[2].textContent;
     var stu_id = e.firstElementChild.textContent;
-    document.getElementById("note_box").value = e.children[3].textContent;
     last_open_student = e.children[0].textContent;
     document.getElementById("SetStudentInfo").showModal();
 }
@@ -160,6 +207,7 @@ function Close() {
     document.getElementById("SetStudentInfo").close();
     document.getElementById("CreateSubjectDialog").close();
     document.getElementById("AddStudentDialog").close();
+    document.getElementById("RemoveTeacherDialog").close();
 }
 
 function ShowCreateSubjectDialog() {
@@ -205,5 +253,36 @@ async function AddStudent() {
         alert("添加学生失败:" + error.toString());
     });
     Close();
+    if (last_open_page == 1)
+        switch_to_students(last_open_subject);
+    else if (last_open_page == 2)
+        switch_to_teachers(last_open_subject);
+}
+
+async function RemoveMember(member_id,subject_id) {
+    await RequestJson("/app/stu.remove_member_from_subject", JSON.stringify({
+        ID: localStorage.getItem("id"),
+        token: localStorage.getItem("token"),
+        subject_id: subject_id,
+        member_id: member_id
+    })).catch(error => {
+        alert("移除学生失败:" + error.toString());
+    });
+}
+
+async function RemoveStudentButtonClick() {
+    await RemoveMember(last_open_student, last_open_subject);
+    Close();
     switch_to_students(last_open_subject);
+}
+
+async function RemoveTeacherButtonClick() {
+    await RemoveMember(last_open_student, last_open_subject);
+    Close();
+    switch_to_teachers(last_open_subject);
+}
+
+function ShowRemoveTeacherDialog(e) {
+    last_open_student = e.children[0].textContent;
+    document.getElementById("RemoveTeacherDialog").showModal();
 }
