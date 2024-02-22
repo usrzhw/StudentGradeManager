@@ -1,0 +1,156 @@
+﻿<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-items: start;
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .title {
+            display: block;
+        }
+
+        #chose_bar {
+            width: 100vw;
+            background-color: rgb(238, 238, 238);
+            height: 5vh;
+            display: flex;
+            align-items: center;
+            flex-direction: row-reverse;
+            max-width: 100%;
+        }
+
+        table {
+            margin-top: 2vh;
+            box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
+            border-collapse: collapse; /* 取消表格边框 */
+        }
+
+        table, th, tr, td {
+            border-bottom: 1px solid #dedede; /* 表格横线 */
+            padding: 2vh;
+            text-align: center;
+        }
+
+        dialog div input {
+            width: 50vw;
+            height: 5vh;
+            margin: 5px;
+            box-sizing: border-box;
+            padding: 8px;
+            margin-bottom: 16px;
+        }
+
+            table tbody tr:hover {
+                background-color: rgb(200, 200, 200);
+            }
+
+        .back_button {
+            margin-right: 3vw;
+            background-color: #4caf50;
+            color: #fff;
+            padding: 6px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .right_button {
+            background-color: #4caf50;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .delete_button {
+            background-color: red;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .button_in_item {
+            background-color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
+            margin: 5px;
+        }
+    </style>
+    <script src="adminsubjects.js"></script>
+</head>
+
+<body>
+    <h1 class="title">课程管理</h1>
+    <div id="chose_bar">
+    </div>
+    <div>
+        <table id="subjects_from" style="width: 80vw;text-align: center;">
+            <thead>
+                <tr id="FormHeader">
+                </tr>
+            </thead>
+            <tbody id="FormBody">
+            </tbody>
+        </table>
+        <div style="margin:10px;text-align:right;" id="ButtomDiv"></div>
+    </div>
+    <dialog id="SetStudentInfo">
+        <div style="display: flex;flex-direction: column; align-items:center;">
+            <label for="opwd">成绩</label>
+            <input type="number" name="opwd" id="grade_box" />
+            <button onclick="make_sure_change()" class="right_button" style="width: 50vw; margin: 5px;">提交</button>
+            <button onclick="RemoveStudentButtonClick()" class="delete_button" style="width: 50vw; margin: 5px;">移除</button>
+            <button onclick="Close()" class="right_button" style="width: 50vw; margin: 5px; background-color: gray; color: black; ">取消</button>
+        </div>
+    </dialog>
+    <dialog id="CreateSubjectDialog">
+        <div style="display: flex;flex-direction: column; align-items:center;">
+            <label>课程名称:</label>
+            <input id="AClassName" />
+            <label>课程描述</label>
+            <input id="ADescription" />
+            <label>起始学年</label>
+            <input id="AStart" type="number" />
+            <label>终止学年</label>
+            <input id="AEnd" type="number" />
+            <label>学期</label>
+            <input id="ASemester" type="number" />
+            <label>教室</label>
+            <input id="AClassRoom" />
+            <button onclick="Close()" class="right_button" style="width: 50vw; margin: 5px; background-color: gray; color: black; ">关闭</button>
+            <button onclick="CreateSubject()" class="right_button" style="width: 50vw; margin: 5px;">确定</button>
+        </div>
+    </dialog>
+    <dialog id="AddStudentDialog">
+        <div style="display: flex;flex-direction: column; align-items:center;">
+            <label for="opwd">学号/工号</label>
+            <input type="number" name="opwd" id="Agrade_box" />
+            <label for="npwd">备注(添加教师时此项无效)</label>
+            <input type="number" name="npwd" id="Anote_box" />
+            <button onclick="AddStudent()" class="right_button" style="width: 50vw; margin: 5px;">提交</button>
+            <button onclick="Close()" class="right_button" style="width: 50vw; margin: 5px; background-color: gray; color: black; ">取消</button>
+        </div>
+    </dialog>
+    <dialog id="RemoveTeacherDialog">
+        <div style="display: flex;flex-direction: column; align-items:center;">
+            <div>确定要删除该教师吗</div>
+            <button onclick="RemoveTeacherButtonClick()" class="delete_button" style="width: 50vw; margin: 5px;">移除</button>
+            <button onclick="Close()" class="right_button" style="width: 50vw; margin: 5px; background-color: gray; color: black; ">取消</button>
+        </div>
+    </dialog>
+</body>
+
+</html>

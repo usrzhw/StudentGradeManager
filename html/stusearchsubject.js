@@ -27,7 +27,7 @@ window.onload = function () {
                 var str = "" +
                     "<tr>" +
                     "<td>" + it.name + "</td>" +
-                    "<td>" + it.ID + "</td>" +
+                    "<td>" + it.id + "</td>" +
                     "<td>" + it.classroom + "</td>" +
                     "<td>" + teachers + "</td>" +
                     "<td>" + it.start + "-" + it.end + "</td>" +
@@ -42,7 +42,7 @@ window.onload = function () {
 function search() {
     document.getElementById("subjects_from_body").innerHTML = "";
     for (var it of classes.subjects) {
-        if (it.ID == Number(document.getElementById("subject_name").value) ||
+        if (it.id == Number(document.getElementById("subject_name").value) ||
             it.name == document.getElementById("subject_name").value||
             document.getElementById("subject_name").value == "") {
             var teachers = "";
@@ -52,7 +52,7 @@ function search() {
             var str = "" +
                 "<tr>" +
                 "<td>" + it.name + "</td>" +
-                "<td>" + it.ID + "</td>" +
+                "<td>" + it.id + "</td>" +
                 "<td>" + it.classroom + "</td>" +
                 "<td>" + teachers + "</td>" +
                 "<td>" + it.start + "-" + it.end + "</td>" +
