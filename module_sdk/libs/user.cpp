@@ -573,7 +573,11 @@ void Account::SubjectManager::RemoveStudent(std::uint64_t student_id, std::uint6
 		std::uint64_t temp = 0;
 		if (json["StudentsID"][i].Get("ID", temp) == false)
 			throw AccountException("Read students list from subject failed");
-		if (temp == subject_id) json["StudentsID"].Delete(i);
+		if (temp == student_id)
+		{
+			json["StudentsID"].Delete(i);
+			break;
+		}
 	}
 	RemoveSubjectFromStudent(subject_id, student_id);
 	fp.Close();
@@ -595,9 +599,9 @@ void Account::SubjectManager::RemoveTeacher(std::uint64_t teacher_id, std::uint6
 		std::uint64_t temp = 0;
 		if (json["TeacherID"].Get(i, temp) == false)
 			throw AccountException("Read teacher list from subject failed");
-		if (temp == subject_id) json["TeacherID"].Delete(i);
+		if (temp == teacher_id) json["TeacherID"].Delete(i);
 	}
-	RemoveSubjectFromStudent(subject_id, teacher_id);
+	RemoveSubjectFromTeacher(subject_id, teacher_id);
 	fp.Close();
 	fp = file.Open(OpenMode::Write | OpenMode::Replace, SeekBase::begin);
 	fp.Write(RbsLib::Buffer(json.ToFormattedString()));
