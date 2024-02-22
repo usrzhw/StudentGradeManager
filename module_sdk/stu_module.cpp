@@ -1112,6 +1112,33 @@ static void CreateSubject(const RbsLib::Network::HTTP::Request& request)
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
 }
+static void GetStudentsGradeCSV(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查登录信息
+	std::uint64_t ID, subject_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	std::stringstream(obj("subject_id")) >> subject_id;
+	//检查用户权限
+	//===============================
+	std::string csv;
+	auto a = Account::SubjectManager::GetSubjectInfo(subject_id);
+	for (auto& it : a.students)
+	{
+		csv += std::to_string(it.id);
+		csv += ",";
+		csv += Account::AccountManager::GetStudentInfo(it.id).name;
+		csv += ",";
+		csv += std::to_string(it.grade);
+		csv += ",";
+		csv += it.notes;
+		csv += "\n";
+	}
+}
 static void CreateClass(const RbsLib::Network::HTTP::Request& request)
 {
 	neb::CJsonObject obj(request.content.ToString());
