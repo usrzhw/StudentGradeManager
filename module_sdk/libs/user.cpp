@@ -610,6 +610,16 @@ void Account::SubjectManager::RemoveTeacher(std::uint64_t teacher_id, std::uint6
 void Account::SubjectManager::DeleteSubject(std::uint64_t subject_id)
 {
 	//删除课程，只允许删除没有老师没有学生的课程，否则抛出异常
+	std::unique_lock<std::shared_mutex> lock2(Global_Subjects_Mutex);
+	using namespace RbsLib::Storage::FileIO;
+	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
+	auto fp = file.Open(OpenMode::Read, SeekBase::begin);
+	neb::CJsonObject json(fp.Read(file.GetFileSize()).ToString());
+
+	if (json["TeacherID"].GetArraySize() > 0 || json["StudentsID"].GetArraySize() > 0)
+		throw AccountException("Can not delete subject with teacher or student");
+	fp.Close();
+	file.Remove();
 }
 
 bool Account::SubjectManager::IsSubjectExist(std::uint64_t subject_id)

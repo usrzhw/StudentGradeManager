@@ -1267,6 +1267,34 @@ static void RemoveMemberFromSubject(const RbsLib::Network::HTTP::Request& reques
 	return SendSuccessResponse(request.connection, obj);
 }
 
+static void DeleteEmptySubject(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	std::uint64_t subject_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("subject_id"));
+	//检查课程是否存在
+	if (!Generator::IsSubjectID(subject_id) || !Account::SubjectManager::IsSubjectExist(subject_id))
+		return SendError(request.connection, "课程不存在", 422);
+	auto info = Account::SubjectManager::GetSubjectInfo(subject_id);
+	if (info.students.empty() && info.teachers.empty())
+	{
+		Account::SubjectManager::DeleteSubject(subject_id);
+		Logger::LogInfo("用户[%d:%s]删除了课程[%d:%s]", basic_info.ID, basic_info.name.c_str(),
+						subject_id, info.name.c_str());
+	}
+	else return SendError(request.connection, "课程不为空", 422);
+	obj.Clear();
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
 
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
 ModuleSDK::ModuleInfo Init(void)
@@ -1304,6 +1332,17 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("create_subject", CreateSubject);
 	info.Add("add_member_to_subject", AddMemberToSubject);
 	info.Add("remove_member_from_subject", RemoveMemberFromSubject);
+	info.Add("delete_empty_subject", DeleteEmptySubject);
+	//初始化模块模块
+	// 检查创建默认用户	
+	if (Account::AccountManager::GetAllTeacherInfo().empty())
+	{
+		//没有管理员用户，创建一个
+		auto id = Generator::TeacherIDGenerator();
+		std::string password = Generator::UUID::GenerateRandom().ToString();
+		Account::AccountManager::CreateTeacher(id, "Administrator", "", "", "", "",password, "", 0);
+		Logger::LogInfo("已创建默认管理员用户，ID:%d,密码:%s,请及时记录并修改", id, password.c_str());
+	}
 	//将模块信息返回
 	return info;
 }
