@@ -569,7 +569,7 @@ static void ChangePassword(const RbsLib::Network::HTTP::Request& request)
 			if (basic_info.permission_level == 0 || info.password == obj("old_password"))
 				info.password = obj("password");
 			else return SendError(request.connection, "密码错误", 403);
-			if (info.phone_number.empty()) return SendError(request.connection, "密码不可被设置为空", 422);
+			if (info.password.empty()) return SendError(request.connection, "密码不可被设置为空", 422);
 			Account::AccountManager::SetStudentProperty(info);
 			Logger::LogInfo("用户[%d:%s]修改了用户[%d:%s]的密码", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str());
@@ -584,7 +584,7 @@ static void ChangePassword(const RbsLib::Network::HTTP::Request& request)
 			if (basic_info.permission_level == 0 || info.password == obj("old_password"))
 				info.password = obj("password");
 			else return SendError(request.connection, "密码错误", 403);
-			if (info.phone_number.empty()) return SendError(request.connection, "密码不可被设置为空", 422);
+			if (info.password.empty()) return SendError(request.connection, "密码不可被设置为空", 422);
 			Account::AccountManager::SetTeacherProperty(info);
 			Logger::LogInfo("用户[%d:%s]修改了用户[%d:%s]的密码", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str());
