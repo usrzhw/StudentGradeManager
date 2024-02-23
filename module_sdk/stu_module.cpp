@@ -254,6 +254,7 @@ static void GetStudentSubjects(const RbsLib::Network::HTTP::Request& request)
 					subobj.Add("classroom", info.classroom);
 					subobj.Add("start", info.semester_start);
 					subobj.Add("end", info.semester_end);
+					subobj.Add("semester", info.semester);
 					subobj.Add("description", info.description);
 					//查找课程中的该学生
 					for (auto& it : info.students)
@@ -310,6 +311,7 @@ static void GetAllSubjects(const RbsLib::Network::HTTP::Request& request)
 		subobj.Add("classroom", info.classroom);
 		subobj.Add("start", info.semester_start);
 		subobj.Add("end", info.semester_end);
+		subobj.Add("semester", info.semester);
 		subobj.Add("description", info.description);
 		//获取该课程的老师信息
 		subobj.AddEmptySubArray("teachers");
@@ -1204,11 +1206,11 @@ static void AddMemberToSubject(const RbsLib::Network::HTTP::Request& request)
 	{
 		//目标成员是学生
 		auto info = Account::AccountManager::GetStudentInfo(member_id);
-		if (std::find(info.subjects.begin(),info.subjects.end(),subject_id)!=info.subjects.end())
+		if (std::find(info.subjects.begin(), info.subjects.end(), subject_id) != info.subjects.end())
 			return SendError(request.connection, "该学生已在课程中", 422);
 		Account::SubjectManager::AddStudent(member_id, subject_id, obj("notes"));
-		Logger::LogInfo("用户[%d:%s]向课程[%d]添加了学生[%d:%s]", basic_info.ID, basic_info.name.c_str(), 
-			subject_id,member_id,info.name.c_str());
+		Logger::LogInfo("用户[%d:%s]向课程[%d]添加了学生[%d:%s]", basic_info.ID, basic_info.name.c_str(),
+			subject_id, member_id, info.name.c_str());
 	}
 	else if (Generator::IsTeacherID(member_id) && Account::AccountManager::IsTeacherExist(member_id))
 	{
@@ -1250,7 +1252,7 @@ static void RemoveMemberFromSubject(const RbsLib::Network::HTTP::Request& reques
 		Account::SubjectManager::RemoveStudent(member_id, subject_id);
 		Logger::LogInfo("用户[%d:%s]从课程[%d]中移除了学生[%d:%s]", basic_info.ID, basic_info.name.c_str(),
 			subject_id, member_id, info.name.c_str());
-		
+
 	}
 	else if (Generator::IsTeacherID(member_id) && Account::AccountManager::IsTeacherExist(member_id))
 	{
@@ -1287,9 +1289,37 @@ static void DeleteEmptySubject(const RbsLib::Network::HTTP::Request& request)
 	{
 		Account::SubjectManager::DeleteSubject(subject_id);
 		Logger::LogInfo("用户[%d:%s]删除了课程[%d:%s]", basic_info.ID, basic_info.name.c_str(),
-						subject_id, info.name.c_str());
+			subject_id, info.name.c_str());
 	}
 	else return SendError(request.connection, "课程不为空", 422);
+	obj.Clear();
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void DeleteEmptyClass(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	std::string class_name = obj("class_name");
+	//检查班级是否存在
+	if (Account::ClassesManager::IsClassExist(class_name) == false)
+		return SendError(request.connection, "班级不存在", 422);
+	auto info = Account::ClassesManager::GetClassInfo(class_name);
+	//检查班级是否为空
+	if (info.students.empty())
+	{
+		Account::ClassesManager::DeleteClass(class_name);
+		Logger::LogInfo("用户[%d:%s]删除了班级[%s]", basic_info.ID, basic_info.name.c_str(), class_name.c_str());
+	}
+	else return SendError(request.connection, "班级不为空", 422);
 	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
@@ -1333,6 +1363,7 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("add_member_to_subject", AddMemberToSubject);
 	info.Add("remove_member_from_subject", RemoveMemberFromSubject);
 	info.Add("delete_empty_subject", DeleteEmptySubject);
+	info.Add("delete_empty_class", DeleteEmptyClass);
 	//初始化模块模块
 	// 检查创建默认用户	
 	if (Account::AccountManager::GetAllTeacherInfo().empty())
@@ -1340,7 +1371,7 @@ ModuleSDK::ModuleInfo Init(void)
 		//没有管理员用户，创建一个
 		auto id = Generator::TeacherIDGenerator();
 		std::string password = Generator::UUID::GenerateRandom().ToString();
-		Account::AccountManager::CreateTeacher(id, "Administrator", "", "", "", "",password, "", 0);
+		Account::AccountManager::CreateTeacher(id, "Administrator", "", "", "", "", password, "", 0);
 		Logger::LogInfo("已创建默认管理员用户，ID:%d,密码:%s,请及时记录并修改", id, password.c_str());
 	}
 	//将模块信息返回

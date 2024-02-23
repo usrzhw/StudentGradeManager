@@ -31,7 +31,7 @@ window.onload = function () {
                     "<td>" + it.ID + "</td>" +
                     "<td>" + it.classroom + "</td>" +
                     "<td>" + teachers + "</td>" +
-                    "<td>" + it.start + "-" + it.end + "</td>" +
+                    "<td>" + it.start + "-" + it.end + "-" + it.semester + "</td>" +
                     "</tr>";
                 document.getElementById("subjects_from_body").innerHTML += str;
             }
@@ -72,7 +72,7 @@ function search() {
                 "<td>" + it.ID + "</td>" +
                 "<td>" + it.classroom + "</td>" +
                 "<td>" + teachers + "</td>" +
-                "<td>" + it.start + "-" + it.end + "</td>" +
+                "<td>" + it.start + "-" + it.end + "-" + it.semester + "</td>" +
                 "</tr>";
             document.getElementById("subjects_from_body").innerHTML += str;
         }
