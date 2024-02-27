@@ -69,7 +69,7 @@ function switch_to_students(class_name) {
     document.getElementById("FormBody").innerHTML = "";
     document.getElementById("FormHeader").innerHTML = "<tr><th>学号</th><th>姓名</th></tr>"
     document.getElementById("chose_bar").innerHTML = "<button onclick=\"switch_to_classes()\" class=\"back_button\">返回</button>"
-    fetch("http://127.0.0.1:8081/app/stu.get_class_info",
+    fetch("/app/stu.get_class_info",
         {
             method: "POST",
             headers: {

@@ -1377,3 +1377,32 @@ ModuleSDK::ModuleInfo Init(void)
 	//将模块信息返回
 	return info;
 }
+static void GetStudentsCSV(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查登录信息
+	std::uint64_t ID, subject_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	std::stringstream(obj("subject_id")) >> subject_id;
+	//检查用户权限
+	//===============================
+	std::string csv;
+	auto a = Account::AccountManager::GetAllStudentInfo();
+	for (auto& it : a)
+	{
+		csv += std::to_string(it.id);
+		csv += ",";
+		csv += Account::AccountManager::GetStudentInfo(it.id).name;
+		csv += ",";
+		csv += it.sex;
+		csv += ",";
+		csv += it.class_name;
+		csv += ",";
+		csv += it.notes;
+		csv += "\n";
+	}
+}
