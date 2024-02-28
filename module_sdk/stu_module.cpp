@@ -1421,6 +1421,7 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("remove_member_from_subject", RemoveMemberFromSubject);
 	info.Add("delete_empty_subject", DeleteEmptySubject);
 	info.Add("delete_empty_class", DeleteEmptyClass);
+	info.Add("change_student_class", ChangeStudentClass);
 	//初始化模块模块
 	// 检查创建默认用户	
 	if (Account::AccountManager::GetAllTeacherInfo().empty())
@@ -1431,7 +1432,7 @@ ModuleSDK::ModuleInfo Init(void)
 		Account::AccountManager::CreateTeacher(id, "Administrator", "", "", "", "", password, "", 0);
 		Logger::LogInfo("已创建默认管理员用户，ID:%d,密码:%s,请及时记录并修改", id, password.c_str());
 	}
-	info.Add("change_student_class", ChangeStudentClass);
+	
 	//将模块信息返回
 	return info;
 }
