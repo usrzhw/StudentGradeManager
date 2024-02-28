@@ -117,6 +117,16 @@ async function Makesure() {
     if (document.getElementById("EMailBox").value != opened_student_info.email) {
         alert("邮箱暂不支持修改");
     }
+    if (document.getElementById("ClassBox").value != opened_student_info.class_name) {
+        await RequestJson("/app/stu.change_student_class", JSON.stringify({
+            ID: localStorage.getItem("id"),
+            token: localStorage.getItem("token"),
+            target_id: student_id,
+            new_class_name: document.getElementById("ClassBox").value
+        })).catch(error => {
+            alert("修改班级失败:" + error.toString());
+        });
+    }
     if (document.getElementById("CollegeBox").value != opened_student_info.college) {
         await RequestJson("/app/stu.change_college", JSON.stringify({
             ID: localStorage.getItem("id"),
