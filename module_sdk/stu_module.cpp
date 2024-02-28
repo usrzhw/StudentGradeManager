@@ -1338,7 +1338,7 @@ static void ChangeStudentClass(const RbsLib::Network::HTTP::Request& request)
 	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
 
 	target_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("target_id"));
-	if (!Generator::IsStudentID(target_id) || Account::AccountManager::IsStudentExist(target_id))
+	if (!Generator::IsStudentID(target_id) || !Account::AccountManager::IsStudentExist(target_id))
 		return SendError(request.connection, "目标学生不存在", 403);
 
 	std::string class_name=obj("new_class_name");
@@ -1350,6 +1350,8 @@ static void ChangeStudentClass(const RbsLib::Network::HTTP::Request& request)
 	Account::AccountManager::ChangeStudentClass(target_id, class_name);
 	obj.Clear();
 	obj.Add("message", "ok");
+	Logger::LogInfo("用户[%ld:%s]修改学生[%ld]的班级为%s", ID, basic_info.name.c_str(),
+		target_id, class_name.c_str());
 	return SendSuccessResponse(request.connection, obj);
 }
 
