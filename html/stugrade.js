@@ -26,7 +26,7 @@ window.onload = function () {
                     "<tr>" +
                     "<td>" + it.name + "</td>" +
                     "<td>" + it.ID + "</td>" +
-                    "<td>" + it.start + "-" + it.end + "</td>" +
+                    "<td>" + it.start + "-" + it.end + "-" + it.semester + "</td>" +
                     "<td>" + it.grade + "</td>" +
                     "<td>" + it.student_note + "</td>" +
                     "</tr>";
@@ -63,7 +63,7 @@ function search() {
                 "<tr>" +
                 "<td>" + it.name + "</td>" +
                 "<td>" + it.ID + "</td>" +
-                "<td>" + it.start + "-" + it.end + "</td>" +
+                "<td>" + it.start + "-" + it.end + "-" + it.semester + "</td>" +
                 "<td>" + it.grade + "</td>" +
                 "<td>" + it.student_note + "</td>" +
                 "</tr>";
