@@ -1267,6 +1267,33 @@ static void RemoveMemberFromSubject(const RbsLib::Network::HTTP::Request& reques
 	return SendSuccessResponse(request.connection, obj);
 }
 
+static void ChangeStudentClass(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+
+	target_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("target_id"));
+	if (!Generator::IsStudentID(target_id) || Account::AccountManager::IsStudentExist(target_id))
+		return SendError(request.connection, "目标学生不存在", 403);
+
+	std::string class_name=obj("new_class_name");
+	//检查课程是否存在
+	if (Account::ClassesManager::IsClassExist(class_name) == false)
+	{
+		return SendError(request.connection, "班级不存在", 422);
+	}
+	Account::AccountManager::ChangeStudentClass(target_id, class_name);
+	obj.Clear();
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
 
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
 ModuleSDK::ModuleInfo Init(void)
@@ -1304,6 +1331,7 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("create_subject", CreateSubject);
 	info.Add("add_member_to_subject", AddMemberToSubject);
 	info.Add("remove_member_from_subject", RemoveMemberFromSubject);
+	info.Add("change_student_class", ChangeStudentClass);
 	//将模块信息返回
 	return info;
 }
