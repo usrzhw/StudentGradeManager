@@ -103,6 +103,7 @@ namespace Account
 		static void SetTeacherProperty(const TeacherBasicInfo& info);
 		static auto GetAllStudentInfo(void) -> std::vector<StudentBasicInfo>;
 		static auto GetAllTeacherInfo(void) -> std::vector<TeacherBasicInfo>;
+		static void ChangeStudentClass(std::uint64_t id, const std::string& new_class_name);
 	};
 	class ClassesManager
 	{

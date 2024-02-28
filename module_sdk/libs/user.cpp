@@ -393,6 +393,46 @@ auto Account::AccountManager::GetAllTeacherInfo(void) -> std::vector<TeacherBasi
 	return info_list;
 }
 
+void Account::AccountManager::ChangeStudentClass(std::uint64_t id, const std::string& new_class_name)
+{
+	std::unique_lock<std::shared_mutex> lock1(Global_Student_Mutex);
+	std::unique_lock<std::shared_mutex> lock2(Global_Classes_Mutex);
+	RbsLib::Storage::StorageFile file = CLASSES_FILE;
+	if (file.IsExist() == false)
+	{
+		throw AccountException("class not exist");
+	}
+	auto fp=file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject obj;
+	obj.Parse(fp.Read(file.GetFileSize()).ToString());
+	if (obj.KeyExist(new_class_name) == false)
+	{
+		throw AccountException("class not exist");
+	}
+	obj[new_class_name]["Students"].Add(id);
+	RbsLib::Storage::StorageFile student_file = fmt::format("{}/{}.json", STUDENT_DIR, id);
+	if (student_file.IsExist() == false)
+	{
+		throw AccountException("student not exist");
+	}
+	fp = student_file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject stu_obj;
+	stu_obj.Parse(fp.Read(student_file.GetFileSize()).ToString());
+	obj[stu_obj("Class")]["Students"].GetArraySize();
+	for (int i = 0; i < obj[stu_obj("Class")]["Students"].GetArraySize(); i++)
+	{
+		std::uint64_t tmp;
+		obj[stu_obj("Class")]["Students"].Get(i, tmp);
+		if (tmp == id)
+			obj[stu_obj("Class")]["Students"].Delete(i);
+	}
+	stu_obj.Replace("Class", new_class_name);
+	fp = file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace,
+		RbsLib::Storage::FileIO::SeekBase::begin);
+	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
+	fp = student_file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
+	fp.Write(RbsLib::Buffer(stu_obj.ToFormattedString()));
+}
 void Account::ClassesManager::CreateClass(const std::string& class_name, std::uint64_t teacherID)
 {
 	//将班级信息存储在Classes.json文件中
