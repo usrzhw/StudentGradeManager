@@ -68,6 +68,16 @@ int main()
 	Logger::LogInfo("模块路径设置为: %s", Config::ModulePath().c_str());
 	module_manager.LoadModules(RbsLib::Storage::StorageFile(Config::ModulePath()));
 	server.SetGetHandle([&module_manager](const RbsLib::Network::TCP::TCPConnection& x, RbsLib::Network::HTTP::RequestHeader& h) {
+		//检查路径是否为根路径
+		if (h.path == "/")
+		{
+			//构造302跳转
+			RbsLib::Network::HTTP::ResponseHeader header;
+			header.status = 302;
+			header.headers.AddHeader("Location", "/html/login.html");
+			x.Send(header.ToBuffer());
+			return;
+		}
 		std::cmatch m;
 		RbsLib::Network::HTTP::ResponseHeader header;
 		header.status = 404;

@@ -469,6 +469,20 @@ void Account::ClassesManager::CreateClass(const std::string& class_name, std::ui
 void Account::ClassesManager::DeleteClass(const std::string& class_name)
 {
 	//若班级中不存在学生，则删除班级及其相关信息，若存在学生则抛出异常
+	std::unique_lock<std::shared_mutex> teacher_lock(Global_Teacher_Mutex);
+	std::unique_lock<std::shared_mutex> lock(Global_Classes_Mutex);
+	using namespace RbsLib::Storage;
+	StorageFile file(CLASSES_FILE);
+	if (file.IsExist() == false) throw AccountException("Class not found");
+	neb::CJsonObject tobj(file.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
+	if (!tobj.KeyExist(class_name))
+		throw AccountException("Class not found");
+	if (tobj[class_name]["Students"].GetArraySize() > 0) throw AccountException("Can not delete class with students");
+	std::uint64_t teacher_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(tobj[class_name]("TeacherID"));
+	tobj.Delete(class_name);
+	file.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin).Write(RbsLib::Buffer(tobj.ToFormattedString()));
+	//从教师文件中删除
+	RemoveClassFromTeacher(teacher_id, class_name);
 }
 
 bool Account::ClassesManager::IsClassExist(const std::string& class_name)
@@ -496,7 +510,6 @@ auto Account::ClassesManager::GetClassInfo(const std::string& class_name) -> Cla
 	if (!tobj.KeyExist(class_name))
 		throw AccountException("Class not found");
 	ret.name = class_name;
-	if (tobj.KeyExist(class_name) == false) throw AccountException("Class not found");
 	neb::CJsonObject obj;
 	tobj.Get(class_name, obj);
 	obj.Get("TeacherID", ret.teacher_id);
@@ -650,6 +663,16 @@ void Account::SubjectManager::RemoveTeacher(std::uint64_t teacher_id, std::uint6
 void Account::SubjectManager::DeleteSubject(std::uint64_t subject_id)
 {
 	//删除课程，只允许删除没有老师没有学生的课程，否则抛出异常
+	std::unique_lock<std::shared_mutex> lock2(Global_Subjects_Mutex);
+	using namespace RbsLib::Storage::FileIO;
+	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
+	auto fp = file.Open(OpenMode::Read, SeekBase::begin);
+	neb::CJsonObject json(fp.Read(file.GetFileSize()).ToString());
+
+	if (json["TeacherID"].GetArraySize() > 0 || json["StudentsID"].GetArraySize() > 0)
+		throw AccountException("Can not delete subject with teacher or student");
+	fp.Close();
+	file.Remove();
 }
 
 bool Account::SubjectManager::IsSubjectExist(std::uint64_t subject_id)

@@ -254,6 +254,7 @@ static void GetStudentSubjects(const RbsLib::Network::HTTP::Request& request)
 					subobj.Add("classroom", info.classroom);
 					subobj.Add("start", info.semester_start);
 					subobj.Add("end", info.semester_end);
+					subobj.Add("semester", info.semester);
 					subobj.Add("description", info.description);
 					//查找课程中的该学生
 					for (auto& it : info.students)
@@ -310,6 +311,7 @@ static void GetAllSubjects(const RbsLib::Network::HTTP::Request& request)
 		subobj.Add("classroom", info.classroom);
 		subobj.Add("start", info.semester_start);
 		subobj.Add("end", info.semester_end);
+		subobj.Add("semester", info.semester);
 		subobj.Add("description", info.description);
 		//获取该课程的老师信息
 		subobj.AddEmptySubArray("teachers");
@@ -569,7 +571,7 @@ static void ChangePassword(const RbsLib::Network::HTTP::Request& request)
 			if (basic_info.permission_level == 0 || info.password == obj("old_password"))
 				info.password = obj("password");
 			else return SendError(request.connection, "密码错误", 403);
-			if (info.phone_number.empty()) return SendError(request.connection, "密码不可被设置为空", 422);
+			if (info.password.empty()) return SendError(request.connection, "密码不可被设置为空", 422);
 			Account::AccountManager::SetStudentProperty(info);
 			Logger::LogInfo("用户[%d:%s]修改了用户[%d:%s]的密码", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str());
@@ -584,7 +586,7 @@ static void ChangePassword(const RbsLib::Network::HTTP::Request& request)
 			if (basic_info.permission_level == 0 || info.password == obj("old_password"))
 				info.password = obj("password");
 			else return SendError(request.connection, "密码错误", 403);
-			if (info.phone_number.empty()) return SendError(request.connection, "密码不可被设置为空", 422);
+			if (info.password.empty()) return SendError(request.connection, "密码不可被设置为空", 422);
 			Account::AccountManager::SetTeacherProperty(info);
 			Logger::LogInfo("用户[%d:%s]修改了用户[%d:%s]的密码", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str());
@@ -1204,11 +1206,11 @@ static void AddMemberToSubject(const RbsLib::Network::HTTP::Request& request)
 	{
 		//目标成员是学生
 		auto info = Account::AccountManager::GetStudentInfo(member_id);
-		if (std::find(info.subjects.begin(),info.subjects.end(),subject_id)!=info.subjects.end())
+		if (std::find(info.subjects.begin(), info.subjects.end(), subject_id) != info.subjects.end())
 			return SendError(request.connection, "该学生已在课程中", 422);
 		Account::SubjectManager::AddStudent(member_id, subject_id, obj("notes"));
-		Logger::LogInfo("用户[%d:%s]向课程[%d]添加了学生[%d:%s]", basic_info.ID, basic_info.name.c_str(), 
-			subject_id,member_id,info.name.c_str());
+		Logger::LogInfo("用户[%d:%s]向课程[%d]添加了学生[%d:%s]", basic_info.ID, basic_info.name.c_str(),
+			subject_id, member_id, info.name.c_str());
 	}
 	else if (Generator::IsTeacherID(member_id) && Account::AccountManager::IsTeacherExist(member_id))
 	{
@@ -1250,7 +1252,7 @@ static void RemoveMemberFromSubject(const RbsLib::Network::HTTP::Request& reques
 		Account::SubjectManager::RemoveStudent(member_id, subject_id);
 		Logger::LogInfo("用户[%d:%s]从课程[%d]中移除了学生[%d:%s]", basic_info.ID, basic_info.name.c_str(),
 			subject_id, member_id, info.name.c_str());
-		
+
 	}
 	else if (Generator::IsTeacherID(member_id) && Account::AccountManager::IsTeacherExist(member_id))
 	{
@@ -1262,6 +1264,62 @@ static void RemoveMemberFromSubject(const RbsLib::Network::HTTP::Request& reques
 			subject_id, member_id, info.name.c_str());
 	}
 	else return SendError(request.connection, "目标用户不存在", 422);
+	obj.Clear();
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void DeleteEmptySubject(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	std::uint64_t subject_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("subject_id"));
+	//检查课程是否存在
+	if (!Generator::IsSubjectID(subject_id) || !Account::SubjectManager::IsSubjectExist(subject_id))
+		return SendError(request.connection, "课程不存在", 422);
+	auto info = Account::SubjectManager::GetSubjectInfo(subject_id);
+	if (info.students.empty() && info.teachers.empty())
+	{
+		Account::SubjectManager::DeleteSubject(subject_id);
+		Logger::LogInfo("用户[%d:%s]删除了课程[%d:%s]", basic_info.ID, basic_info.name.c_str(),
+			subject_id, info.name.c_str());
+	}
+	else return SendError(request.connection, "课程不为空", 422);
+	obj.Clear();
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void DeleteEmptyClass(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//检查用户权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	std::string class_name = obj("class_name");
+	//检查班级是否存在
+	if (Account::ClassesManager::IsClassExist(class_name) == false)
+		return SendError(request.connection, "班级不存在", 422);
+	auto info = Account::ClassesManager::GetClassInfo(class_name);
+	//检查班级是否为空
+	if (info.students.empty())
+	{
+		Account::ClassesManager::DeleteClass(class_name);
+		Logger::LogInfo("用户[%d:%s]删除了班级[%s]", basic_info.ID, basic_info.name.c_str(), class_name.c_str());
+	}
+	else return SendError(request.connection, "班级不为空", 422);
 	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
@@ -1293,6 +1351,36 @@ static void ChangeStudentClass(const RbsLib::Network::HTTP::Request& request)
 	obj.Clear();
 	obj.Add("message", "ok");
 	return SendSuccessResponse(request.connection, obj);
+}
+
+static void GetStudentsCSV(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查登录信息
+	std::uint64_t ID, subject_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	std::stringstream(obj("subject_id")) >> subject_id;
+	//检查用户权限
+	//===============================
+	std::string csv;
+	auto a = Account::AccountManager::GetAllStudentInfo();
+	for (auto& it : a)
+	{
+		csv += std::to_string(it.id);
+		csv += ",";
+		csv += Account::AccountManager::GetStudentInfo(it.id).name;
+		csv += ",";
+		csv += it.sex;
+		csv += ",";
+		csv += it.class_name;
+		csv += ",";
+		csv += it.notes;
+		csv += "\n";
+	}
 }
 
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
@@ -1331,6 +1419,18 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("create_subject", CreateSubject);
 	info.Add("add_member_to_subject", AddMemberToSubject);
 	info.Add("remove_member_from_subject", RemoveMemberFromSubject);
+	info.Add("delete_empty_subject", DeleteEmptySubject);
+	info.Add("delete_empty_class", DeleteEmptyClass);
+	//初始化模块模块
+	// 检查创建默认用户	
+	if (Account::AccountManager::GetAllTeacherInfo().empty())
+	{
+		//没有管理员用户，创建一个
+		auto id = Generator::TeacherIDGenerator();
+		std::string password = Generator::UUID::GenerateRandom().ToString();
+		Account::AccountManager::CreateTeacher(id, "Administrator", "", "", "", "", password, "", 0);
+		Logger::LogInfo("已创建默认管理员用户，ID:%d,密码:%s,请及时记录并修改", id, password.c_str());
+	}
 	info.Add("change_student_class", ChangeStudentClass);
 	//将模块信息返回
 	return info;

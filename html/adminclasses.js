@@ -27,6 +27,7 @@ async function RequestJson(url, body) {
             }
         });
 }
+
 function switch_to_classes() {
     document.getElementById("chose_bar").innerHTML = "<button onclick=\"CreateClassButton()\" class=\"back_button\">创建班级</button>";
     document.getElementById("FormBody").innerHTML = "";
@@ -56,6 +57,7 @@ function switch_to_classes() {
                     "<td>" + it.teacher_name + "</td>" +
                     "<td>" + it.create_time + "</td>" +
                     "<td>" + it.students_number + "</td>" +
+                    "<td>" + "<button class=\"delete_button\" onclick=\"DeleteClassButtonClick(this)\">删除班级</button>" + "</td>" +
                     "</tr>";
                 document.getElementById("FormBody").innerHTML += str;
             }
@@ -192,5 +194,22 @@ var class_name = document.getElementById("AClassName").value;
         });
     Close();
     switch_to_classes();
+}
+
+function DeleteClassButtonClick(e) {
+    var class_name = e.parentElement.parentElement.firstElementChild.textContent;
+    if (confirm("确认删除班级" + class_name + "吗？")) {
+        RequestJson("/app/stu.delete_empty_class",
+            JSON.stringify({
+                ID: localStorage.getItem("id"),
+                token: localStorage.getItem("token"),
+                class_name: class_name
+            })).then(x => {
+                switch_to_classes();
+            }).catch(error => {
+                alert(error.toString());
+            });
+    }
+    event.stopPropagation();
 }
 

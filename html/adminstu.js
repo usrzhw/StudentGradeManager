@@ -68,6 +68,7 @@ async function OpenStudentInfoDialog(student_id) {
     document.getElementById("EnrollmentDateBox").value = student_info.enrollment_date;
     document.getElementById("NotesBox").value = student_info.notes;
     document.getElementById("PermissionLevelBox").value = student_info.permission_level;
+    document.getElementById("PasswordBox").value = "";
     opened_student_info = student_info;
     opened_student_id = student_id;
     document.getElementById("StudentInfo").showModal();
@@ -152,6 +153,16 @@ async function Makesure() {
             token: localStorage.getItem("token"),
             target_id: student_id,
             permission_level: document.getElementById("PermissionLevelBox").value
+        })).catch(error => {
+            alert("修改权限等级失败:" + error.toString());
+        });
+    }
+    if (document.getElementById("PasswordBox").value != "") {
+        await RequestJson("/app/stu.change_password", JSON.stringify({
+            ID: localStorage.getItem("id"),
+            token: localStorage.getItem("token"),
+            target_id: student_id,
+            password: document.getElementById("PasswordBox").value
         })).catch(error => {
             alert("修改权限等级失败:" + error.toString());
         });

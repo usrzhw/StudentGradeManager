@@ -3,11 +3,13 @@ window.onload = function () {
     switch_to_subjects();
 }
 
-function item_click(e) {
+async function item_click(e) {
     if (e.textContent == "管理学生")
         switch_to_students(e.parentNode.parentNode.firstElementChild.textContent);
     else if (e.textContent == "管理教师")
         switch_to_teachers(e.parentNode.parentNode.firstElementChild.textContent);
+    else if (e.textContent == "删除课程")
+        await DeleteEmptySubject(e.parentNode.parentNode.firstElementChild.textContent);
 }
 
 function up_sort_subjects(x, y) {
@@ -66,7 +68,7 @@ function switch_to_subjects() {
                     "<tr>" +
                     "<td>" + it.id + "</td>" +
                     "<td>" + it.name + "</td>" +
-                    "<td>" + "<button onclick=\"item_click(this)\" style=\"margin: 5px;\" class=\"right_button\">管理学生</button><button onclick=\"item_click(this)\" style=\"margin: 5px;\" class=\"right_button\">管理教师</button>" + "</td>" +
+                    "<td>" + "<button onclick=\"item_click(this)\" style=\"margin: 5px;\" class=\"right_button\">管理学生</button><button onclick=\"item_click(this)\" style=\"margin: 5px;\" class=\"right_button\">管理教师</button><button onclick=\"item_click(this)\" style=\"margin: 5px;\" class=\"delete_button\">删除课程</button>" + "</td>" +
                     "</tr>";
                 document.getElementById("FormBody").innerHTML += str;
             }
@@ -285,4 +287,16 @@ async function RemoveTeacherButtonClick() {
 function ShowRemoveTeacherDialog(e) {
     last_open_student = e.children[0].textContent;
     document.getElementById("RemoveTeacherDialog").showModal();
+}
+
+async function DeleteEmptySubject(id) {
+    if (window.confirm("确定删除课程吗?") == false) return;
+    await RequestJson("/app/stu.delete_empty_subject", JSON.stringify({
+        ID: localStorage.getItem("id"),
+        token: localStorage.getItem("token"),
+        subject_id: id
+    })).catch(error => {
+        alert("删除课程失败:" + error.toString());
+    });
+    switch_to_subjects();
 }
