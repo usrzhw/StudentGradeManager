@@ -144,6 +144,16 @@ async function Makesure() {
             alert("修改权限等级失败:" + error.toString());
         });
     }
+    if (document.getElementById("PasswordBox").value != "") {
+        await RequestJson("/app/stu.change_password", JSON.stringify({
+            ID: localStorage.getItem("id"),
+            token: localStorage.getItem("token"),
+            target_id: teacher_id,
+            password: document.getElementById("PasswordBox").value
+        })).catch(error => {
+            alert("修改密码失败:" + error.toString());
+        });
+    }
     Close();
     ShowTeachersList();
 }
