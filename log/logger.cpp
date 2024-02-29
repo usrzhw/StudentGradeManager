@@ -2,8 +2,36 @@
 #include <time.h>
 #include <cstdarg>
 #include <cstdio>
+#include <ctime>
+#include <iostream>
+using namespace std;
+
+static void WriteFrmtd(FILE* stream, const char* format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	vfprintf(stream, format, args);
+	va_end(args);
+}
 void Logger::print_log(int level, const char* log_format, va_list lst)
 {
+	time_t timep;
+	struct tm* p;
+	char name[256] = { 0 };
+
+	time(&timep);
+	p = localtime(&timep);
+
+	sprintf(name, "%d-%02d-%02d.log", 1900 + p->tm_year, 1 + p->tm_mon, p->tm_mday);
+	FILE* fp;
+	if (fp == NULL)
+	{
+		cout << "The file failed to open!";
+	}
+	fp = fopen(name, "a+");
+	WriteFrmtd(fp, log_format);
+	fclose(fp);
+
 	switch (level)
 	{
 	case 3:
