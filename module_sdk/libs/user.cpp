@@ -38,7 +38,7 @@ static inline void AddClassToTeacher(std::uint64_t id, const std::string& class_
 	if (false == obj["Classes"].Add(class_name))
 		throw Account::AccountException(fmt::format("Add class to teacher failed"));
 	fp.Close();
-	fp = file.Open(FileIO::OpenMode::Write|FileIO::OpenMode::Replace, FileIO::SeekBase::begin);
+	fp = file.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin);
 	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
 }
 
@@ -87,7 +87,7 @@ static inline void RemoveSubjectFromStudent(std::uint64_t subject_id, std::uint6
 		std::uint64_t temp = 0;
 		if (obj["Subjects"].Get(i, temp) == false)
 			throw Account::AccountException("Get number from subjects failed");
-		if (temp == subject_id) 
+		if (temp == subject_id)
 		{
 			obj["Subjects"].Delete(i);
 			break;
@@ -135,7 +135,7 @@ static inline void RemoveSubjectFromTeacher(std::uint64_t subject_id, std::uint6
 void Account::AccountManager::CreateStudent(
 	std::uint64_t ID,
 	const std::string& name,
-	const std::string& phone_number, const std::string & email,
+	const std::string& phone_number, const std::string& email,
 	const std::string& student_sex,
 	const std::string& enrollment_date,
 	const std::string& pass_word,
@@ -194,7 +194,7 @@ void Account::AccountManager::CreateStudent(
 void Account::AccountManager::CreateTeacher(
 	std::uint64_t ID,
 	const std::string& name,
-	const std::string& phone_number, const std::string & email,
+	const std::string& phone_number, const std::string& email,
 	const std::string& teacher_sex,
 	const std::string& college,
 	const std::string& pass_word,
@@ -393,6 +393,46 @@ auto Account::AccountManager::GetAllTeacherInfo(void) -> std::vector<TeacherBasi
 	return info_list;
 }
 
+void Account::AccountManager::ChangeStudentClass(std::uint64_t id, const std::string& new_class_name)
+{
+	std::unique_lock<std::shared_mutex> lock1(Global_Student_Mutex);
+	std::unique_lock<std::shared_mutex> lock2(Global_Classes_Mutex);
+	RbsLib::Storage::StorageFile file = CLASSES_FILE;
+	if (file.IsExist() == false)
+	{
+		throw AccountException("class not exist");
+	}
+	auto fp=file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject obj;
+	obj.Parse(fp.Read(file.GetFileSize()).ToString());
+	if (obj.KeyExist(new_class_name) == false)
+	{
+		throw AccountException("class not exist");
+	}
+	obj[new_class_name]["Students"].Add(id);
+	RbsLib::Storage::StorageFile student_file = fmt::format("{}/{}.json", STUDENT_DIR, id);
+	if (student_file.IsExist() == false)
+	{
+		throw AccountException("student not exist");
+	}
+	fp = student_file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject stu_obj;
+	stu_obj.Parse(fp.Read(student_file.GetFileSize()).ToString());
+	obj[stu_obj("Class")]["Students"].GetArraySize();
+	for (int i = 0; i < obj[stu_obj("Class")]["Students"].GetArraySize(); i++)
+	{
+		std::uint64_t tmp;
+		obj[stu_obj("Class")]["Students"].Get(i, tmp);
+		if (tmp == id)
+			obj[stu_obj("Class")]["Students"].Delete(i);
+	}
+	stu_obj.Replace("Class", new_class_name);
+	fp = file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace,
+		RbsLib::Storage::FileIO::SeekBase::begin);
+	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
+	fp = student_file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
+	fp.Write(RbsLib::Buffer(stu_obj.ToFormattedString()));
+}
 void Account::ClassesManager::CreateClass(const std::string& class_name, std::uint64_t teacherID)
 {
 	//将班级信息存储在Classes.json文件中
@@ -413,7 +453,7 @@ void Account::ClassesManager::CreateClass(const std::string& class_name, std::ui
 	if (class_json.KeyExist(class_name))
 		throw AccountException("Class is already exist");
 	//向老师文件添加
-	AddClassToTeacher(teacherID,class_name);
+	AddClassToTeacher(teacherID, class_name);
 	//保存课程信息
 	class_fp.Close();
 	neb::CJsonObject subjson;
@@ -421,7 +461,7 @@ void Account::ClassesManager::CreateClass(const std::string& class_name, std::ui
 	subjson.Add("CreateTime", Time::GetFormattedTime());
 	subjson.AddEmptySubArray("Students");
 	class_json.Add(class_name, subjson);
-	class_fp = classes_file.Open(RbsLib::Storage::FileIO::OpenMode::Write| RbsLib::Storage::FileIO::OpenMode::Replace,
+	class_fp = classes_file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace,
 		RbsLib::Storage::FileIO::SeekBase::begin);
 	class_fp.Write(RbsLib::Buffer(class_json.ToFormattedString()));
 }
@@ -429,6 +469,20 @@ void Account::ClassesManager::CreateClass(const std::string& class_name, std::ui
 void Account::ClassesManager::DeleteClass(const std::string& class_name)
 {
 	//若班级中不存在学生，则删除班级及其相关信息，若存在学生则抛出异常
+	std::unique_lock<std::shared_mutex> teacher_lock(Global_Teacher_Mutex);
+	std::unique_lock<std::shared_mutex> lock(Global_Classes_Mutex);
+	using namespace RbsLib::Storage;
+	StorageFile file(CLASSES_FILE);
+	if (file.IsExist() == false) throw AccountException("Class not found");
+	neb::CJsonObject tobj(file.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
+	if (!tobj.KeyExist(class_name))
+		throw AccountException("Class not found");
+	if (tobj[class_name]["Students"].GetArraySize() > 0) throw AccountException("Can not delete class with students");
+	std::uint64_t teacher_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(tobj[class_name]("TeacherID"));
+	tobj.Delete(class_name);
+	file.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin).Write(RbsLib::Buffer(tobj.ToFormattedString()));
+	//从教师文件中删除
+	RemoveClassFromTeacher(teacher_id, class_name);
 }
 
 bool Account::ClassesManager::IsClassExist(const std::string& class_name)
@@ -456,7 +510,6 @@ auto Account::ClassesManager::GetClassInfo(const std::string& class_name) -> Cla
 	if (!tobj.KeyExist(class_name))
 		throw AccountException("Class not found");
 	ret.name = class_name;
-	if (tobj.KeyExist(class_name)==false) throw AccountException("Class not found");
 	neb::CJsonObject obj;
 	tobj.Get(class_name, obj);
 	obj.Get("TeacherID", ret.teacher_id);
@@ -470,8 +523,24 @@ auto Account::ClassesManager::GetClassInfo(const std::string& class_name) -> Cla
 	return ret;
 }
 
+auto Account::ClassesManager::GetAllClassInfo(void) -> std::vector<ClassInfo>
+{
+	std::shared_lock<std::shared_mutex> lock(Global_Classes_Mutex);
+	std::vector<ClassInfo> ret;
+	using namespace RbsLib::Storage;
+	StorageFile file(CLASSES_FILE);
+	if (file.IsExist() == false) throw AccountException("Class not found");
+	neb::CJsonObject obj(file.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
+	std::string class_name;
+	while (obj.GetKey(class_name))
+	{
+		ret.push_back(GetClassInfo(class_name));
+	}
+	return ret;
+}
 
-void Account::SubjectManager::CreateSubject(std::uint64_t subject_id, const std::string& subject_name, int begin_year, int end_year, const std::string & classroom, const std::string& description)
+
+void Account::SubjectManager::CreateSubject(std::uint64_t subject_id, const std::string& subject_name, int begin_year, int end_year, int semester, const std::string& classroom, const std::string& description)
 {
 	using namespace RbsLib::Storage;
 	//创建课程，放在Subjects目录中，以课程编号命名，如1000000.json
@@ -484,7 +553,7 @@ void Account::SubjectManager::CreateSubject(std::uint64_t subject_id, const std:
 	if (file.IsExist()) throw AccountException("Subject is already exist");
 	neb::CJsonObject object;
 	object.Add("SubjectName", subject_name);
-	object.Add("Semester", fmt::format("{}-{}", begin_year, end_year));
+	object.Add("Semester", fmt::format("{}-{}:{}", begin_year, end_year, semester));
 	object.Add("Description", description);
 	object.Add("Classroom", classroom);
 	object.AddEmptySubArray("TeacherID");
@@ -493,7 +562,7 @@ void Account::SubjectManager::CreateSubject(std::uint64_t subject_id, const std:
 	fp.Write(RbsLib::Buffer(object.ToFormattedString()));
 }
 
-void Account::SubjectManager::AddStudent(std::uint64_t student_id, std::uint64_t subject_id, const std::string & notes)
+void Account::SubjectManager::AddStudent(std::uint64_t student_id, std::uint64_t subject_id, const std::string& notes)
 {
 	//向课程添加学生
 	std::unique_lock<std::shared_mutex> lock(Global_Student_Mutex);
@@ -502,6 +571,12 @@ void Account::SubjectManager::AddStudent(std::uint64_t student_id, std::uint64_t
 	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
 	auto fp = file.Open(OpenMode::Read, SeekBase::begin);
 	neb::CJsonObject json(fp.Read(file.GetFileSize()).ToString());
+	for (int i = 0; i < json["StudentsID"].GetArraySize(); ++i)
+	{
+		std::uint64_t temp = 0;
+		json["StudentsID"][i].Get("ID", temp);
+		if (temp == student_id) throw AccountException("Student is already in the subject");
+	}
 	neb::CJsonObject sub;
 	sub.Add("ID", student_id);
 	sub.Add("Grade", -1);
@@ -523,6 +598,12 @@ void Account::SubjectManager::AddTeacher(std::uint64_t teacher_id, std::uint64_t
 	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
 	auto fp = file.Open(OpenMode::Read, SeekBase::begin);
 	neb::CJsonObject json(fp.Read(file.GetFileSize()).ToString());
+	for (int i = 0; i < json["TeacherID"].GetArraySize(); ++i)
+	{
+		std::uint64_t temp = 0;
+		json["TeacherID"].Get(i, temp);
+		if (temp == teacher_id) throw AccountException("Teacher is already in the subject");
+	}
 	if (json["TeacherID"].Add(teacher_id) == false)
 		throw AccountException("Add teacher to subject failed");
 	AddSubjectToTeacher(subject_id, teacher_id);
@@ -545,7 +626,11 @@ void Account::SubjectManager::RemoveStudent(std::uint64_t student_id, std::uint6
 		std::uint64_t temp = 0;
 		if (json["StudentsID"][i].Get("ID", temp) == false)
 			throw AccountException("Read students list from subject failed");
-		if (temp == subject_id) json["StudentsID"].Delete(i);
+		if (temp == student_id)
+		{
+			json["StudentsID"].Delete(i);
+			break;
+		}
 	}
 	RemoveSubjectFromStudent(subject_id, student_id);
 	fp.Close();
@@ -565,11 +650,11 @@ void Account::SubjectManager::RemoveTeacher(std::uint64_t teacher_id, std::uint6
 	for (int i = 0; i < json["TeacherID"].GetArraySize(); ++i)
 	{
 		std::uint64_t temp = 0;
-		if (json["TeacherID"].Get(i,temp) == false)
+		if (json["TeacherID"].Get(i, temp) == false)
 			throw AccountException("Read teacher list from subject failed");
-		if (temp == subject_id) json["TeacherID"].Delete(i);
+		if (temp == teacher_id) json["TeacherID"].Delete(i);
 	}
-	RemoveSubjectFromStudent(subject_id, teacher_id);
+	RemoveSubjectFromTeacher(subject_id, teacher_id);
 	fp.Close();
 	fp = file.Open(OpenMode::Write | OpenMode::Replace, SeekBase::begin);
 	fp.Write(RbsLib::Buffer(json.ToFormattedString()));
@@ -578,6 +663,16 @@ void Account::SubjectManager::RemoveTeacher(std::uint64_t teacher_id, std::uint6
 void Account::SubjectManager::DeleteSubject(std::uint64_t subject_id)
 {
 	//删除课程，只允许删除没有老师没有学生的课程，否则抛出异常
+	std::unique_lock<std::shared_mutex> lock2(Global_Subjects_Mutex);
+	using namespace RbsLib::Storage::FileIO;
+	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
+	auto fp = file.Open(OpenMode::Read, SeekBase::begin);
+	neb::CJsonObject json(fp.Read(file.GetFileSize()).ToString());
+
+	if (json["TeacherID"].GetArraySize() > 0 || json["StudentsID"].GetArraySize() > 0)
+		throw AccountException("Can not delete subject with teacher or student");
+	fp.Close();
+	file.Remove();
 }
 
 bool Account::SubjectManager::IsSubjectExist(std::uint64_t subject_id)
@@ -603,7 +698,7 @@ Account::SubjectInfo Account::SubjectManager::GetSubjectInfo(std::uint64_t subje
 	info.description = obj("Description");
 	info.id = subject_id;
 	info.name = obj("SubjectName");
-	std::sscanf(obj("Semester").c_str(), "%d-%d", &info.semester_start, &info.semester_end);
+	std::sscanf(obj("Semester").c_str(), "%d-%d:%d", &info.semester_start, &info.semester_end, &info.semester);
 	for (int i = 0; i < obj["TeacherID"].GetArraySize(); ++i)
 	{
 		std::uint64_t teacher_id = 0;
@@ -626,7 +721,7 @@ auto Account::SubjectManager::GetAllSubjectInfo(void) -> std::vector<SubjectInfo
 	std::shared_lock<std::shared_mutex> lock(Global_Subjects_Mutex);
 	std::vector<SubjectInfo> info_list;
 	RbsLib::Storage::StorageFile dir(SUBJECT_DIR);
-	if (dir.IsExist()&&dir.GetFileType()==RbsLib::Storage::FileType::FileType::Dir)
+	if (dir.IsExist() && dir.GetFileType() == RbsLib::Storage::FileType::FileType::Dir)
 	{
 		for (const auto& it : dir)
 		{

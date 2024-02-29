@@ -17,7 +17,6 @@ auto Account::LoginManager::Login(std::uint64_t ID, const std::string& password)
 	int user_permission_level = 4;
 	User user;
 	std::string user_pwd;
-	if (password.empty()) throw LoginManagerException("未提交密码");
 	try
 	{
 		if (ID >= Generator::STU_ID_START && ID <= Generator::STU_ID_END)

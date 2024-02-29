@@ -73,7 +73,7 @@ async function OpenTeacherInfoDialog(teacher_id) {
 
 function Close() {
     document.getElementById("TeacherInfo").close();
-    document.getElementById("AddStudentDialog").close();
+    document.getElementById("AddTeacherDialog").close();
 }
 
 async function Makesure() {
@@ -148,22 +148,20 @@ async function Makesure() {
     ShowTeachersList();
 }
 
-function OpenAddStudentDialog() {
+function OpenAddTeacherDialog() {
     document.getElementById("ANameBox").value = "";
     document.getElementById("ASexBox").value = "";
     document.getElementById("APhoneNumberBox").value = "";
     document.getElementById("AEMailBox").value = "";
     document.getElementById("ACollegeBox").value = "";
-    document.getElementById("AClassBox").value = "";
-    document.getElementById("AEnrollmentDateBox").value = "";
     document.getElementById("ANotesBox").value = "";
     document.getElementById("APermissionLevelBox").value = "";
     document.getElementById("APasswordBox").value = "";
-    document.getElementById("AddStudentDialog").showModal();
+    document.getElementById("AddTeacherDialog").showModal();
 }
 
 async function CreateStudent() {
-    await RequestJson("/app/stu.create_student", JSON.stringify({
+    await RequestJson("/app/stu.create_teacher", JSON.stringify({
         ID: localStorage.getItem("id"),
         token: localStorage.getItem("token"),
         name: document.getElementById("ANameBox").value,
@@ -171,13 +169,11 @@ async function CreateStudent() {
         phone_number: document.getElementById("APhoneNumberBox").value,
         email: document.getElementById("AEMailBox").value,
         college: document.getElementById("ACollegeBox").value,
-        class: document.getElementById("AClassBox").value,
-        enrollment_date: document.getElementById("AEnrollmentDateBox").value,
         notes: document.getElementById("ANotesBox").value,
         permission_level: document.getElementById("APermissionLevelBox").value,
         password: document.getElementById("APasswordBox").value,
     })).catch(error => {
-        alert("创建学生失败:" + error.toString());
+        alert("创建教师失败:" + error.toString());
     });
     Close();
     ShowTeachersList();

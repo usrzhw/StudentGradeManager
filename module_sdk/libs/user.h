@@ -50,6 +50,7 @@ namespace Account
 		std::string name;
 		int semester_start;
 		int semester_end;
+		int semester;
 		std::string classroom;
 		std::string description;
 		std::vector<std::uint64_t> teachers;
@@ -86,8 +87,8 @@ namespace Account
 		static void CreateTeacher(
 			std::uint64_t ID,
 			const std::string& name, 
-			const std::string& teacher_sex, const std::string & email,
-			const std::string& phone_number,
+			const std::string& phonenumber, const std::string & email,
+			const std::string& sex,
 			const std::string & college,
 			const std::string& pass_word, 
 			const std::string & notes, int permission_level
@@ -102,6 +103,7 @@ namespace Account
 		static void SetTeacherProperty(const TeacherBasicInfo& info);
 		static auto GetAllStudentInfo(void) -> std::vector<StudentBasicInfo>;
 		static auto GetAllTeacherInfo(void) -> std::vector<TeacherBasicInfo>;
+		static void ChangeStudentClass(std::uint64_t id, const std::string& new_class_name);
 	};
 	class ClassesManager
 	{
@@ -110,6 +112,7 @@ namespace Account
 		static void DeleteClass(const std::string& class_name);
 		static bool IsClassExist(const std::string& class_name);
 		static auto GetClassInfo(const std::string& class_name)->ClassInfo;
+		static auto GetAllClassInfo(void)->std::vector<ClassInfo>;
 	};
 	class SubjectManager
 	{
@@ -118,7 +121,9 @@ namespace Account
 			std::uint64_t subject_id,
 			const std::string& subject_name,
 			int begin_year,
-			int end_year, const std::string & classroom, const std::string& description
+			int end_year, 
+			int semester
+			,const std::string & classroom, const std::string& description
 			);
 		static void AddStudent(std::uint64_t student_id, std::uint64_t subject_id, const std::string & notes);
 		static void AddTeacher(std::uint64_t teacher, std::uint64_t subject_id);

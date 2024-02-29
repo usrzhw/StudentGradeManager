@@ -1,0 +1,143 @@
+﻿<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-items: start;
+        }
+
+        .title {
+            display: block;
+        }
+
+        #chose_bar {
+            width: 100vw;
+            background-color: rgb(238, 238, 238);
+            height: 5vh;
+            display: flex;
+            align-items: center;
+            justify-items: center;
+        }
+
+        table {
+            margin-top: 2vh;
+            box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
+            border-collapse: collapse; /* 取消表格边框 */
+        }
+
+        table, th, tr, td {
+            border-bottom: 1px solid #dedede; /* 表格横线 */
+            padding: 2vh;
+            text-align: center;
+        }
+
+            table tbody tr:hover {
+                background-color: rgb(200, 200, 200);
+                cursor: pointer;
+            }
+        dialog div input {
+            width: 50vw;
+            height: 5vh;
+            margin: 5px;
+            box-sizing: border-box;
+            padding: 8px;
+            margin-bottom: 16px;
+        }
+
+        .back_button {
+            margin-left: auto;
+            margin-right: 3vw;
+            background-color: #4caf50;
+            color: #fff;
+            padding: 6px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .right_button {
+            background-color: #4caf50;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .delete_button {
+            background-color: red;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #StudentInfo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-items: center;
+            margin-top: 2vh;
+            box-shadow: 0 1px 12px 0 rgba(0, 0, 0, 0.1); /* 阴影 */
+            text-align:center;
+        }
+        #StudentInfo, .item {
+            border-bottom: 1px solid #dedede; /* 表格横线 */
+            padding: 2vh;
+            width: 60vw;
+            text-align: center;
+        }
+    </style>
+    <script src="adminclasses.js"></script>
+</head>
+
+<body>
+    <h1 class="title">班级管理</h1>
+    <div id="chose_bar">
+    </div>
+    <div id="from_bar">
+        <table id="subjects_from" style="width: 80vw;text-align: center;">
+            <thead>
+                <tr id="FormHeader">
+                </tr>
+            </thead>
+            <tbody id="FormBody">
+            </tbody>
+        </table>
+        <dialog id="StudentGrades">
+            <div style="display: flex;flex-direction: column; width:70vw; align-items:center;">
+                <div id="StudentInfo"></div>
+                <table id="subjects_from" style="width: 66vw;text-align: center;">
+                    <thead>
+                        <tr>
+                            <th>课程编号</th>
+                            <th>课程</th>
+                            <th>成绩</th>
+                            <th>备注</th>
+                        </tr>
+                    </thead>
+                    <tbody id="GradeFormBody">
+                    </tbody>
+                </table>
+                <button onclick="Close()" class="right_button" style="width:50vw;margin:5px;background-color:gray;color:black;">关闭</button>
+            </div>
+        </dialog>
+        <dialog id="AddClassDialog">
+            <div style="display: flex;flex-direction: column; align-items:center;">
+                <label>班级名称:</label>
+                <input id="AClassName" />
+                <label>班主任工号</label>
+                <input id="ATeacherID" />
+                <button onclick="Close()" class="right_button" style="width: 50vw; margin: 5px; background-color: gray; color: black; ">关闭</button>
+                <button onclick="CreateClass()" class="right_button" style="width: 50vw; margin: 5px;">确定</button>
+            </div>
+        </dialog>
+    </div>
+</body>
+
+</html>

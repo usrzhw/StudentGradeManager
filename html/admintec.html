@@ -82,7 +82,7 @@
 <body>
     <h1 class="title">教师管理</h1>
     <div id="chose_bar">
-        <button onclick="OpenAddStudentDialog()" class="right_button" style="margin-left:auto;margin-right:5vw;">添加</button>
+        <button onclick="OpenAddTeacherDialog()" class="right_button" style="margin-left:auto;margin-right:5vw;">添加</button>
     </div>
     <div id="from_bar">
         <table id="subjects_from" style="width: 80vw;text-align: center;">
@@ -120,7 +120,7 @@
                 <button onclick="Makesure()" class="right_button" style="width: 50vw; margin: 5px;">确定修改</button>
             </div>
         </dialog>
-        <dialog id="AddStudentDialog">
+        <dialog id="AddTeacherDialog">
             <div style="display: flex;flex-direction: column; align-items:center;">
                 <label>姓名:</label>
                 <input id="ANameBox" />
@@ -132,10 +132,6 @@
                 <input id="AEMailBox" />
                 <label>学院</label>
                 <input id="ACollegeBox" />
-                <label>班级</label>
-                <input id="AClassBox" />
-                <label>入学时间</label>
-                <input id="AEnrollmentDateBox" />
                 <label>备注</label>
                 <input id="ANotesBox" />
                 <label>权限等级</label>

@@ -1,4 +1,8 @@
 var classes;
+
+function up(a, b) {
+    return Number(a.id) - Number(b.id);
+}
 window.onload = function () {
     fetch("/app/stu.get_all_subjects",
         {
@@ -19,6 +23,7 @@ window.onload = function () {
             }
         }).then(json_data => {
             classes = json_data;
+            classes.subjects.sort(up);
             for (var it of classes.subjects) {
                 var teachers = "";
                 for (var teacher of it.teachers) {
@@ -27,10 +32,10 @@ window.onload = function () {
                 var str = "" +
                     "<tr>" +
                     "<td>" + it.name + "</td>" +
-                    "<td>" + it.ID + "</td>" +
+                    "<td>" + it.id + "</td>" +
                     "<td>" + it.classroom + "</td>" +
                     "<td>" + teachers + "</td>" +
-                    "<td>" + it.start + "-" + it.end + "</td>" +
+                    "<td>" + it.start + "-" + it.end + "-" + it.semester + "</td>" +
                     "<td>" + it.description + "</td>" +
                     "</tr>";
                 document.getElementById("subjects_from_body").innerHTML += str;
@@ -42,7 +47,7 @@ window.onload = function () {
 function search() {
     document.getElementById("subjects_from_body").innerHTML = "";
     for (var it of classes.subjects) {
-        if (it.ID == Number(document.getElementById("subject_name").value) ||
+        if (it.id == Number(document.getElementById("subject_name").value) ||
             it.name == document.getElementById("subject_name").value||
             document.getElementById("subject_name").value == "") {
             var teachers = "";
@@ -52,10 +57,10 @@ function search() {
             var str = "" +
                 "<tr>" +
                 "<td>" + it.name + "</td>" +
-                "<td>" + it.ID + "</td>" +
+                "<td>" + it.id + "</td>" +
                 "<td>" + it.classroom + "</td>" +
                 "<td>" + teachers + "</td>" +
-                "<td>" + it.start + "-" + it.end + "</td>" +
+                "<td>" + it.start + "-" + it.end + "-" + it.semester + "</td>" +
                 "<td>" + it.description + "</td>" +
                 "</tr>";
             document.getElementById("subjects_from_body").innerHTML += str;

@@ -35,7 +35,7 @@ window.onload = function () {
         });
 }
 function jump_to_login() {
-    location.href = "login.html";
+    location.href = "adminlogin.html";
 }
 function logout() {
     var id = localStorage.getItem("id");
@@ -68,8 +68,10 @@ function on_item_click(e) {
         frame.src = "adminstu.html";
     else if (e.text == "教师管理")
         frame.src = "admintec.html";
+    else if (e.text == "班级管理")
+        frame.src = "adminclasses.html";
     else if (e.text == "课程管理")
-        frame.src = "tecsubjects.html";
+        frame.src = "adminsubjects.html";
     else if (e.text == "账号管理")
         frame.src = "self_account.html";
     var list = document.querySelectorAll("li a");
