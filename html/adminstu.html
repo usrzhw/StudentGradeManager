@@ -59,6 +59,14 @@
             border-radius: 4px;
             cursor: pointer;
         }
+        .delete_button {
+            background-color: red;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
 
         .item {
             border-bottom: 1px solid #dedede; /* 表格横线 */
@@ -124,6 +132,7 @@
                 <input id="PasswordBox" type="password" />
                 <button onclick="Close()" class="right_button" style="width: 50vw; margin: 5px; background-color: gray; color: black; ">关闭</button>
                 <button onclick="Makesure()" class="right_button" style="width: 50vw; margin: 5px;">确定修改</button>
+                <button onclick="DeleteStudent()" class="delete_button" style="width: 50vw; margin: 5px;">删除学生</button>
             </div>
         </dialog>
         <dialog id="AddStudentDialog">
