@@ -244,7 +244,68 @@ bool Account::AccountManager::IsTeacherExist(std::uint64_t id)
 
 void Account::AccountManager::DeleteStudent(std::uint64_t student_id)
 {
-	//标志其为不可用账户
+	std::unique_lock<std::shared_mutex> lock(Global_Student_Mutex);
+	std::unique_lock<std::shared_mutex> lock2(Global_Classes_Mutex);
+	std::unique_lock<std::shared_mutex> lock3(Global_Subjects_Mutex);
+	//检查学生是否存在
+	RbsLib::Storage::StorageFile file = RbsLib::Storage::StorageFile(STUDENT_DIR)[std::to_string(student_id) + ".json"];
+	if (file.IsExist() == false) throw AccountException("Student not exist");
+	//读取学生文件
+	auto fp = file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject obj;
+	if (false == obj.Parse(fp.Read(file.GetFileSize()).ToString()))
+		throw AccountException("Parse student json text failed");
+	fp.Close();
+	//获取学生所在班级并从班级中移除学生
+	RbsLib::Storage::StorageFile class_file = CLASSES_FILE;
+	if (class_file.IsExist() == false) throw AccountException("Classes file not exist");
+	fp = class_file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
+	neb::CJsonObject class_obj;
+	if (false == class_obj.Parse(fp.Read(class_file.GetFileSize()).ToString()))
+		throw AccountException("Parse classes json text failed");
+	fp.Close();
+	std::string class_name = obj("Class");
+	for (int i = 0; i < class_obj[class_name]["Students"].GetArraySize(); ++i)
+	{
+		std::uint64_t temp;
+		class_obj[class_name]["Students"].Get(i, temp);
+		if (temp == student_id)
+		{
+			class_obj[class_name]["Students"].Delete(i);
+			break;
+		}
+	}
+	//保存班级信息
+	fp = class_file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
+	fp.Write(RbsLib::Buffer(class_obj.ToFormattedString()));
+	fp.Close();
+	//获取学生所在课程并从课程中移除学生
+	for (int i = 0; i < obj["Subjects"].GetArraySize(); ++i)
+	{
+		std::uint64_t subject_id;
+		obj["Subjects"].Get(i, subject_id);
+		RbsLib::Storage::StorageFile subject_file = RbsLib::Storage::StorageFile(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
+		if (subject_file.IsExist() == false) throw AccountException("Subject file not exist");
+		fp = subject_file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
+		neb::CJsonObject subject_obj(fp.Read(subject_file.GetFileSize()).ToString());
+		fp.Close();
+		for (int i = 0; i < subject_obj["StudentsID"].GetArraySize(); ++i)
+		{
+			std::uint64_t temp;
+			subject_obj["StudentsID"][i].Get("ID", temp);
+			if (temp == student_id)
+			{
+				subject_obj["StudentsID"].Delete(i);
+				break;
+			}
+		}
+		fp = subject_file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
+		fp.Write(RbsLib::Buffer(subject_obj.ToFormattedString()));
+		fp.Close();
+	}
+	//删除学生文件
+	file.Remove();
+
 }
 
 void Account::AccountManager::DeleteTeacher(std::uint64_t teacher_id)

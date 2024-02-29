@@ -1384,6 +1384,32 @@ static void GetStudentsCSV(const RbsLib::Network::HTTP::Request& request)
 		csv += "\n";
 	}
 }
+static void DeleteStudent(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查登录信息
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//判断权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	//获取目标学生ID
+	target_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("target_id"));
+	if (target_id == ID) return SendError(request.connection, "不能删除自己", 422);
+	//检查目标学生是否存在
+	if (Generator::IsStudentID(target_id) == false || Account::AccountManager::IsStudentExist(target_id) == false)
+		return SendError(request.connection, "学生不存在", 422);
+	//删除学生
+	Account::AccountManager::DeleteStudent(target_id);
+	Logger::LogInfo("用户[%d:%s]删除了学生[%ld]", basic_info.ID, basic_info.name.c_str(), target_id);
+	obj.Clear();
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
 
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
 ModuleSDK::ModuleInfo Init(void)
@@ -1424,6 +1450,8 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("delete_empty_subject", DeleteEmptySubject);
 	info.Add("delete_empty_class", DeleteEmptyClass);
 	info.Add("change_student_class", ChangeStudentClass);
+	info.Add("delete_student", DeleteStudent);
+
 	//初始化模块模块
 	// 检查创建默认用户	
 	if (Account::AccountManager::GetAllTeacherInfo().empty())
