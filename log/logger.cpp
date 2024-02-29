@@ -15,22 +15,6 @@ static void WriteFrmtd(FILE* stream, const char* format, ...)
 }
 void Logger::print_log(int level, const char* log_format, va_list lst)
 {
-	time_t timep;
-	struct tm* p;
-	char name[256] = { 0 };
-
-	time(&timep);
-	p = localtime(&timep);
-
-	sprintf(name, "%d-%02d-%02d.log", 1900 + p->tm_year, 1 + p->tm_mon, p->tm_mday);
-	FILE* fp;
-	if (fp == NULL)
-	{
-		cout << "The file failed to open!";
-	}
-	fp = fopen(name, "a+");
-	WriteFrmtd(fp, log_format);
-	fclose(fp);
 
 	switch (level)
 	{
