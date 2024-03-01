@@ -11,6 +11,7 @@
 #include "configuration_manager/configuration_manager.h"
 #include "rbslib/FileIO.h"
 #include <memory>
+#include <execinfo.h>
 using namespace std;
 
 static std::jmp_buf buf;
@@ -19,12 +20,33 @@ static bool IsExitProgram = false;
 static void ExitProgram();
 static void SignalHandle(int sig);
 
+void PrintTrace(void)
+{
+	void* array[10];
+	size_t size;
+	char** strings;
+	size_t i;
+
+	size = backtrace(array, 10);
+	strings = backtrace_symbols(array, size);
+
+	Logger::LogError("Obtained %zd stack frames.", size);
+
+	for (i = 0; i < size; i++)
+	{
+		Logger::LogError("%s", strings[i]);
+	}
+
+	free(strings);
+}
+
 static void SignalHandle(int sig)
 {
 	switch (sig)
 	{
 	case SIGSEGV:
 		Logger::LogError("段错误，程序将尝试退出");
+		PrintTrace();
 		ExitProgram();
 		break;
 	case SIGINT:
