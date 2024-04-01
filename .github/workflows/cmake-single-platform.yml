@@ -29,7 +29,7 @@ jobs:
 
     - name: Install dependencies
       # Install any dependencies required for your project
-      run: sudo apt-get install -y libfmt-dev uuid-dev
+      run: sudo apt-get install -y libfmt-dev uuid-dev libsqlite3-dev
 
     - name: Build
       # Build your program with the given configuration
