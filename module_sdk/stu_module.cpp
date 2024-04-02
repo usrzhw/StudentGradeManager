@@ -1469,8 +1469,7 @@ ModuleSDK::ModuleInfo Init(void)
 	db.Exec("CREATE TABLE IF NOT EXISTS teachers (ID INTEGER PRIMARY KEY,Name TEXT NOT NULL,PhoneNumber TEXT,Sex TEXT,CollegeName TEXT, Password TEXT, PermissionLevel INTEGER, Notes TEXT, IsEnable INTEGER, Email TEXT);");
 	db.Exec("CREATE TABLE IF NOT EXISTS subjects (ID INTEGER PRIMARY KEY,Name TEXT NOT NULL,Semester TEXT,Description TEXT,ClassRoom TEXT);");
 	db.Exec("CREATE TABLE IF NOT EXISTS students_subjects_relation (StudentID INTEGER NOT NULL,SubjectID INTEGER NOT NULL,Grade INTEGER,Notes TEXT);");
-	auto ret = db.Exec("SELECT * FROM students");
-	Logger::LogInfo("%s", ret["name"][0].c_str());
+	db.Exec("CREATE TABLE IF NOT EXISTS teachers_subjects_relation (TeacherID INTEGER NOT NULL,SubjectID INTEGER NOT NULL,Notes TEXT);");
 	//将模块信息返回
 	return info;
 }

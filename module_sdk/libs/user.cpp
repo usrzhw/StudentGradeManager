@@ -9,10 +9,12 @@
 #include "../../rbslib/FileIO.h"
 #include "../../json/CJsonObject.h"
 #include "../../log/logger.h"
+#include "../libs/sqlite_cpp.h"
 constexpr auto STUDENT_DIR = "Students";
 constexpr auto CLASSES_FILE = "Classes.json";
 constexpr auto TEACHER_DIR = "Teachers";
 constexpr auto SUBJECT_DIR = "Subjects";
+constexpr auto DATABASE_FILE_PATH = "user.db";
 //以下锁需要同时加锁多个时按照从上到下的顺序加锁防止死锁
 std::shared_mutex Global_Student_Mutex;//读写学生信息文件时加锁
 std::shared_mutex Global_Teacher_Mutex;//读写教师信息文件时加锁 
@@ -143,52 +145,8 @@ void Account::AccountManager::CreateStudent(
 	const std::string& class_name,
 	const std::string& notes, int permission_level)
 {
-	//将学生信息存放在 Students 目录下，以学号命名，如100000.json
-	std::unique_lock<std::shared_mutex> lock(Global_Student_Mutex);
-	RbsLib::Storage::StorageFile dir("Students");
-	RbsLib::Storage::StorageFile now_dir(".");
-	if (dir.IsExist() == false) now_dir.CreateDir("Students");
-	if (dir[std::to_string(ID) + ".json"].IsExist()) throw AccountException("Student already exist");
-	auto fp = dir[std::to_string(ID) + ".json"].Open(RbsLib::Storage::FileIO::OpenMode::Write |
-		RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
-	neb::CJsonObject obj;
-	obj.Add("Name", name);
-	obj.Add("PhoneNumber", phone_number);
-	obj.Add("Email", email);
-	obj.Add("Sex", student_sex);
-	obj.Add("EnrollmentDate", enrollment_date);
-	obj.AddEmptySubArray("Subjects");
-	obj.Add("College", college);
-	obj.Add("Class", class_name);
-	obj.Add("Password", pass_word);
-	obj.Add("PermissionLevel", permission_level);
-	obj.Add("Notes", notes);
-	obj.Add("IsEnable", 1);
-	std::string str = obj.ToFormattedString();
-	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
-	fp.Close();
-	std::unique_lock<std::shared_mutex> class_lock(Global_Classes_Mutex);
-	neb::CJsonObject class_obj;
-	try
-	{
-		RbsLib::Storage::FileIO::File cfp(CLASSES_FILE, RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
-		auto buffer = cfp.Read(RbsLib::Storage::StorageFile(CLASSES_FILE).GetFileSize());
-		cfp.Close();
-		if (false == class_obj.Parse(buffer.ToString()))
-			throw AccountException("Classes.json parsed failed");
-		if (class_obj.KeyExist(class_name) == false)
-			throw AccountException("Target class is not exist");
-		if (false == class_obj[class_name]["Students"].Add(ID))
-			throw AccountException("Add to class students list failed");
-		cfp.Open(CLASSES_FILE, RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace,
-			RbsLib::Storage::FileIO::SeekBase::begin);
-		cfp.Write(RbsLib::Buffer(class_obj.ToFormattedString()));
-	}
-	catch (const AccountException& ex)
-	{
-		dir[std::to_string(ID) + ".json"].Remove();
-		throw;
-	}
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	db.Exec(fmt::format("CREATE TABLE IF NOT EXISTS students {},{},{},{},{},{},{},{},{},{},{};", ID, name, phone_number, student_sex, enrollment_date, pass_word, college, class_name, notes, permission_level));
 }
 
 void Account::AccountManager::CreateTeacher(
@@ -200,117 +158,65 @@ void Account::AccountManager::CreateTeacher(
 	const std::string& pass_word,
 	const std::string& notes, int permission_level)
 {
-	//将教师信息存放在 Teachers 目录下，以工号命名，如10000.json
-	std::unique_lock<std::shared_mutex> lock(Global_Teacher_Mutex);
-	RbsLib::Storage::StorageFile dir("Teachers");
-	RbsLib::Storage::StorageFile now_dir(".");
-	if (dir.IsExist() == false) now_dir.CreateDir("Teachers");
-	if (dir[std::to_string(ID) + ".json"].IsExist()) throw AccountException("Teachers already exist");
-	auto fp = dir[std::to_string(ID) + ".json"].Open(RbsLib::Storage::FileIO::OpenMode::Write |
-		RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
-	neb::CJsonObject obj;
-	obj.Add("Name", name);
-	obj.Add("Sex", teacher_sex);
-	obj.Add("PhoneNumber", phone_number);
-	obj.Add("Email", email);
-	obj.Add("College", college);
-	obj.AddEmptySubArray("Subjects");
-	obj.AddEmptySubArray("Classes");
-	obj.Add("Password", pass_word);
-	obj.Add("PermissionLevel", permission_level);
-	obj.Add("Notes", notes);
-	obj.Add("IsEnable", true);
-	std::string str = obj.ToFormattedString();
-	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
+	
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	db.Exec(fmt::format("CREATE TABLE IF NOT EXISTS teachers {},{},{},{},{},{},{},{},{}", ID, name, phone_number, email, teacher_sex, college, pass_word, notes, permission_level));
 }
 
 bool Account::AccountManager::IsStudentExist(std::uint64_t id)
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Student_Mutex);
-	if (RbsLib::Storage::StorageFile(STUDENT_DIR).IsExist())
-		if (RbsLib::Storage::StorageFile(STUDENT_DIR)[std::to_string(id) + ".json"].IsExist())
-			return true;
-	return false;
+	
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT ID FROM students WHERE ID = {};",id));
+	if (temp["ID"].size() == 0)
+	{
+		return false;
+	}
+	else return true;
 }
 
 bool Account::AccountManager::IsTeacherExist(std::uint64_t id)
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Teacher_Mutex);
-	if (RbsLib::Storage::StorageFile(TEACHER_DIR).IsExist())
-		if (RbsLib::Storage::StorageFile(TEACHER_DIR)[std::to_string(id) + ".json"].IsExist())
-			return true;
-	return false;
+	
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT ID FROM teachers WHERE ID = {};", id));
+	if (temp["ID"].size() == 0)
+	{
+		return false;
+	}
+	else return true;
 }
 
 void Account::AccountManager::DeleteStudent(std::uint64_t student_id)
 {
-	std::unique_lock<std::shared_mutex> lock(Global_Student_Mutex);
-	std::unique_lock<std::shared_mutex> lock2(Global_Classes_Mutex);
-	std::unique_lock<std::shared_mutex> lock3(Global_Subjects_Mutex);
-	//检查学生是否存在
-	RbsLib::Storage::StorageFile file = RbsLib::Storage::StorageFile(STUDENT_DIR)[std::to_string(student_id) + ".json"];
-	if (file.IsExist() == false) throw AccountException("Student not exist");
-	//读取学生文件
-	auto fp = file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
-	neb::CJsonObject obj;
-	if (false == obj.Parse(fp.Read(file.GetFileSize()).ToString()))
-		throw AccountException("Parse student json text failed");
-	fp.Close();
-	//获取学生所在班级并从班级中移除学生
-	RbsLib::Storage::StorageFile class_file = CLASSES_FILE;
-	if (class_file.IsExist() == false) throw AccountException("Classes file not exist");
-	fp = class_file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
-	neb::CJsonObject class_obj;
-	if (false == class_obj.Parse(fp.Read(class_file.GetFileSize()).ToString()))
-		throw AccountException("Parse classes json text failed");
-	fp.Close();
-	std::string class_name = obj("Class");
-	for (int i = 0; i < class_obj[class_name]["Students"].GetArraySize(); ++i)
+	
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT ID FROM students WHERE ID = {};", student_id));
+	if (temp["ID"].size() == 0)
 	{
-		std::uint64_t temp;
-		class_obj[class_name]["Students"].Get(i, temp);
-		if (temp == student_id)
-		{
-			class_obj[class_name]["Students"].Delete(i);
-			break;
-		}
+		throw AccountException("This student not in the student's tables");
 	}
-	//保存班级信息
-	fp = class_file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
-	fp.Write(RbsLib::Buffer(class_obj.ToFormattedString()));
-	fp.Close();
-	//获取学生所在课程并从课程中移除学生
-	for (int i = 0; i < obj["Subjects"].GetArraySize(); ++i)
+	else
 	{
-		std::uint64_t subject_id;
-		obj["Subjects"].Get(i, subject_id);
-		RbsLib::Storage::StorageFile subject_file = RbsLib::Storage::StorageFile(fmt::format("{}/{}.json", SUBJECT_DIR, subject_id));
-		if (subject_file.IsExist() == false) throw AccountException("Subject file not exist");
-		fp = subject_file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
-		neb::CJsonObject subject_obj(fp.Read(subject_file.GetFileSize()).ToString());
-		fp.Close();
-		for (int i = 0; i < subject_obj["StudentsID"].GetArraySize(); ++i)
-		{
-			std::uint64_t temp;
-			subject_obj["StudentsID"][i].Get("ID", temp);
-			if (temp == student_id)
-			{
-				subject_obj["StudentsID"].Delete(i);
-				break;
-			}
-		}
-		fp = subject_file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
-		fp.Write(RbsLib::Buffer(subject_obj.ToFormattedString()));
-		fp.Close();
+		db.Exec(fmt::format("DELETE FROM students WHERE ID = {}",student_id));
+		db.Exec(fmt::format("DELETE FROM students_subjects_relation WHERE StudentID = {}", student_id));
 	}
-	//删除学生文件
-	file.Remove();
 
 }
 
 void Account::AccountManager::DeleteTeacher(std::uint64_t teacher_id)
 {
-	//标记其为不可用账户
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT ID FROM students WHERE ID = {};", teacher_id));
+	if (temp["ID"].size() == 0)
+	{
+		throw AccountException("This teacher not in the teacher's tables");
+	}
+	else
+	{
+		db.Exec(fmt::format("DELETE FROM students WHERE ID = {}", teacher_id));
+		db.Exec(fmt::format("DELETE FROM teachers_subjects_relation WHERE TeacherID = {}", teacher_id));
+	}
 }
 
 auto Account::AccountManager::GetStudentInfo(std::uint64_t id)->StudentBasicInfo
