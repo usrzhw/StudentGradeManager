@@ -1471,7 +1471,6 @@ ModuleSDK::ModuleInfo Init(void)
 		Account::AccountManager::CreateTeacher(id, "Administrator", "", "", "", "", password, "", 0);
 		Logger::LogInfo("已创建默认管理员用户，ID:%d,密码:%s,请及时记录并修改", id, password.c_str());
 	}
-	
 	//将模块信息返回
 	return info;
 }
