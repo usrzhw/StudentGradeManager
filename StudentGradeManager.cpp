@@ -188,7 +188,7 @@ int main()
 	{
 		if (!setjmp(buf))
 		{
-			server.LoopWait();
+			server.LoopWait(true,20);
 		}
 	}
 	catch (const std::exception& ex)

@@ -167,7 +167,7 @@ namespace RbsLib
 			public:
 				HTTPServer(const std::string& host = "0.0.0.0", int port = 80);
 				HTTPServer(int port);
-				void LoopWait(void);
+				void LoopWait(bool use_thread_pool = false, int keep_threads_number = 0);
 				void SetPostHandle(const std::function<void(const TCP::TCPConnection& connection, RequestHeader& header, Buffer& post_content)>& func);
 				void SetGetHandle(const std::function<void(const TCP::TCPConnection& connection, RequestHeader& header)>& func);
 			};
