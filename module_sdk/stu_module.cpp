@@ -8,7 +8,7 @@
 #include "../log/logger.h"
 #include "libs/generators.h"
 #include "../rbslib/String.h"
-#include "libs/commandline.h"
+
 #include "libs/sqlite_cpp.h"
 
 static void SendError(const RbsLib::Network::TCP::TCPConnection& connection,

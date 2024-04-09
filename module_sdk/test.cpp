@@ -23,6 +23,14 @@ void Login(const RbsLib::Network::HTTP::Request& request)
 	request.connection.Send(RbsLib::Buffer(json));
 }
 
+void cmd_action(int argc, const char** argv)
+{
+	for (int i=0;i<argc;++i)
+		{
+		std::cout << argv[i] << std::endl;
+	}
+}
+
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
 ModuleSDK::ModuleInfo Init(void)
 {
@@ -34,6 +42,7 @@ ModuleSDK::ModuleInfo Init(void)
 
 	//再添加一个方法
 	info.Add("login", Login);
+	info.AddCommand("cmd", cmd_action);
 
 	//将模块信息返回
 	return info;
