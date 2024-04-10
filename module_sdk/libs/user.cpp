@@ -205,16 +205,8 @@ void Account::AccountManager::DeleteStudent(std::uint64_t student_id)
 void Account::AccountManager::DeleteTeacher(std::uint64_t teacher_id)
 {
 	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
-	auto temp = db.Exec(fmt::format("SELECT ID FROM students WHERE ID = {};", teacher_id));
-	if (temp["ID"].size() == 0)
-	{
-		throw AccountException("This teacher not in the teacher's tables");
-	}
-	else
-	{
-		db.Exec(fmt::format("DELETE FROM teachers_subjects_relation WHERE TeacherID = {}", teacher_id));
-		db.Exec(fmt::format("DELETE FROM students WHERE ID = {}", teacher_id));
-	}
+	db.Exec(fmt::format("DELETE FROM teachers_subjects_relation WHERE TeacherID = {}", teacher_id));
+	db.Exec(fmt::format("DELETE FROM students WHERE ID = {}", teacher_id));
 }
 
 auto Account::AccountManager::GetStudentInfo(std::uint64_t id)->StudentBasicInfo
