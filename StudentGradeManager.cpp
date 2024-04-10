@@ -20,6 +20,7 @@
 #include <sys/sendfile.h>
 #include <sys/file.h>
 #include <memory>
+#include "cache/cache.h"
 using namespace std;
 
 static std::shared_mutex Global_Module_List_Lock;
