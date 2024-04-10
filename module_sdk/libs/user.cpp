@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fmt/format.h>
+#include "database.h"
 #include "../../rbslib/String.h"
 #include "../../rbslib/Storage.h"
 #include "../../rbslib/FileIO.h"
@@ -146,7 +147,7 @@ void Account::AccountManager::CreateStudent(
 	const std::string& notes, int permission_level)
 {
 	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
-	db.Exec(fmt::format("CREATE TABLE IF NOT EXISTS students {},{},{},{},{},{},{},{},{},{},{};", ID, name, phone_number, student_sex, enrollment_date, pass_word, college, class_name, notes, permission_level));
+	db.Exec(fmt::format("INSERT INTO students ('ID','Name','PhoneNumber','Email','Sex','EnrollmentDate','Password','CollegeName','ClassName','Notes','PermissionLevel') VALUES ({},'{}','{}','{}','{}','{}','{}','{}','{}','{}',{});", ID, name, phone_number, email, student_sex, enrollment_date, pass_word, college, class_name, notes, permission_level));
 }
 
 void Account::AccountManager::CreateTeacher(
@@ -160,12 +161,11 @@ void Account::AccountManager::CreateTeacher(
 {
 	
 	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
-	db.Exec(fmt::format("CREATE TABLE IF NOT EXISTS teachers {},{},{},{},{},{},{},{},{}", ID, name, phone_number, email, teacher_sex, college, pass_word, notes, permission_level));
+	db.Exec(fmt::format("INSERT INTO teachers('ID','Name','PhoneNumber','Email','Sex','CollegeName','Password','Notes','PermissionLevel') VALUES ({},'{}','{}','{}','{}','{}','{}','{}',{});", ID, name, phone_number, email, teacher_sex, college, pass_word, notes, permission_level));
 }
 
 bool Account::AccountManager::IsStudentExist(std::uint64_t id)
 {
-	
 	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
 	auto temp = db.Exec(fmt::format("SELECT ID FROM students WHERE ID = {};",id));
 	if (temp["ID"].size() == 0)
@@ -189,7 +189,6 @@ bool Account::AccountManager::IsTeacherExist(std::uint64_t id)
 
 void Account::AccountManager::DeleteStudent(std::uint64_t student_id)
 {
-	
 	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
 	auto temp = db.Exec(fmt::format("SELECT ID FROM students WHERE ID = {};", student_id));
 	if (temp["ID"].size() == 0)
@@ -198,10 +197,9 @@ void Account::AccountManager::DeleteStudent(std::uint64_t student_id)
 	}
 	else
 	{
-		db.Exec(fmt::format("DELETE FROM students WHERE ID = {}",student_id));
 		db.Exec(fmt::format("DELETE FROM students_subjects_relation WHERE StudentID = {}", student_id));
+		db.Exec(fmt::format("DELETE FROM students WHERE ID = {}",student_id));
 	}
-
 }
 
 void Account::AccountManager::DeleteTeacher(std::uint64_t teacher_id)
@@ -214,296 +212,279 @@ void Account::AccountManager::DeleteTeacher(std::uint64_t teacher_id)
 	}
 	else
 	{
-		db.Exec(fmt::format("DELETE FROM students WHERE ID = {}", teacher_id));
 		db.Exec(fmt::format("DELETE FROM teachers_subjects_relation WHERE TeacherID = {}", teacher_id));
+		db.Exec(fmt::format("DELETE FROM students WHERE ID = {}", teacher_id));
 	}
 }
 
 auto Account::AccountManager::GetStudentInfo(std::uint64_t id)->StudentBasicInfo
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Student_Mutex);
-	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", STUDENT_DIR, id));
-	RbsLib::Storage::FileIO::File fp = file.Open
-	(RbsLib::Storage::FileIO::OpenMode::Read,
-		RbsLib::Storage::FileIO::SeekBase::begin);
-	auto buffer = fp.Read(file.GetFileSize());
-	neb::CJsonObject obj;
-	if (false == obj.Parse(buffer.ToString()))
-		throw AccountException("Parse student json text failed");
-	StudentBasicInfo info;
-	info.id = id;
-	info.name = obj("Name");
-	info.sex = obj("Sex");
-	info.email = obj("Email");
-	info.phone_number = obj("PhoneNumber");
-	info.enrollment_date = obj("EnrollmentDate");
-	info.class_name = obj("Class");
-	info.college = obj("College");
-	info.password = obj("Password");
-	obj.Get("PermissionLevel", info.permission_level);
-	info.notes = obj("Notes");
-	obj.Get("IsEnable", info.is_enable);
-	for (int i = 0; i < obj["Subjects"].GetArraySize(); ++i)
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT * FROM students WHERE ID = {};",id));
+	auto temp2 = db.Exec(fmt::format("SELECT SubjectID FROM students_subjects_relation WHERE StudentID = {};", id));
+	if (temp["ID"].size() == 0)
 	{
-		std::uint64_t temp;
-		obj["Subjects"].Get(i, temp);
-		info.subjects.push_back(temp);
+		throw AccountException("These students not in the students' tables");
 	}
-	return info;
+	if (temp2["SubjectID"].size() == 0)
+	{
+		throw AccountException("These subject not is not exist");
+	}
+		StudentBasicInfo a;
+		a.id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["ID"][0]);
+		a.name = temp["Name"][0];
+		a.phone_number = temp["PhoneNumber"][0];
+		a.sex = temp["Sex"][0];
+		a.enrollment_date = temp["PermissionLevel"][0];
+		a.notes = temp["Notes"][0];
+		a.college = temp["CollegeName"][0];
+		a.class_name = temp["ClassName"][0];
+		a.password = temp["Password"][0];
+		a.permission_level = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["PermissionLevel"][0]);
+		a.is_enable = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["IsEnable"][0]);
+		a.email = temp["Email"][0];
+		for (const auto& it : temp2["SubjectID"])
+			{
+				a.subjects.push_back(RbsLib::String::Convert::StringToNumber<std::uint64_t>(it));
+			}
+		return a;
 }
 
 auto Account::AccountManager::GetTeacherInfo(std::uint64_t id) -> TeacherBasicInfo
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Teacher_Mutex);
-	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", TEACHER_DIR, id));
-	RbsLib::Storage::FileIO::File fp = file.Open
-	(RbsLib::Storage::FileIO::OpenMode::Read,
-		RbsLib::Storage::FileIO::SeekBase::begin);
-	auto buffer = fp.Read(file.GetFileSize());
-	neb::CJsonObject obj;
-	if (false == obj.Parse(buffer.ToString()))
-		throw AccountException("Parse teacher json text failed");
-	TeacherBasicInfo info;
-	info.id = id;
-	info.name = obj("Name");
-	info.sex = obj("Sex");
-	info.email = obj("Email");
-	info.phone_number = obj("PhoneNumber");
-	info.college = obj("College");
-	info.password = obj("Password");
-	obj.Get("PermissionLevel", info.permission_level);
-	info.notes = obj("Notes");
-	obj.Get("IsEnable", info.is_enable);
-	for (int i = 0; i < obj["Subjects"].GetArraySize(); ++i)
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT * FROM teachers WHERE ID = {};", id));
+	auto temp2 = db.Exec(fmt::format("SELECT ClassName FROM classes WHERE TeacherID = {};", id));
+	auto temp3 = db.Exec(fmt::format("SELECT SubjectID FROM teachers_subjects_relation WHERE TeacherID = {};", id));
+	if (temp["ID"].size() == 0)
 	{
-		std::uint64_t temp;
-		obj["Subjects"].Get(i, temp);
-		info.subjects.push_back(temp);
+		throw AccountException("These teachers not in the teachers' tables");
 	}
-	for (int i = 0; i < obj["Classes"].GetArraySize(); ++i)
-	{
-		info.classes.push_back(obj["Classes"](i));
-	}
-	return info;
+		TeacherBasicInfo a;
+		a.id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["ID"][0]);
+		a.name = temp["Name"][0];
+		a.phone_number = temp["PhoneNumber"][0];
+		a.sex = temp["Sex"][0];
+		a.notes = temp["Notes"][0];
+		a.college = temp["CollegeName"][0];
+		a.password = temp["Password"][0];
+		a.permission_level = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["PermissionLevel"][0]);
+		a.is_enable = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["IsEnable"][0]);
+		a.email = temp["Email"][0];
+		for (const auto& it : temp2["ClassName"])
+		{
+			a.classes.push_back(it);
+		}
+		for (const auto& it : temp3["SubjectID"])
+		{
+			a.subjects.push_back(RbsLib::String::Convert::StringToNumber<std::uint64_t>(it));
+		}
+		return a;
 }
 
 void Account::AccountManager::SetStudentProperty(const StudentBasicInfo& info)
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Student_Mutex);
-	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", STUDENT_DIR, info.id));
-	neb::CJsonObject obj(file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
-	obj.ReplaceAdd("Name", info.name);
-	obj.ReplaceAdd("PhoneNumber", info.phone_number);
-	obj.ReplaceAdd("Email", info.email);
-	obj.ReplaceAdd("Sex", info.sex);
-	obj.ReplaceAdd("College", info.college);
-	obj.ReplaceAdd("EnrollmentDate", info.enrollment_date);
-	obj.ReplaceAdd("Password", info.password);
-	obj.ReplaceAdd("PermissionLevel", info.permission_level);
-	obj.ReplaceAdd("Notes", info.notes);
-	obj.ReplaceAdd("IsEnable", info.is_enable);
-	file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin)
-		.Write(RbsLib::Buffer(obj.ToFormattedString()));
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT * FROM students WHERE ID = {};", info.id));
+	if (temp["ID"].size() == 0)
+	{
+		throw AccountException("These students not in the students' tables");
+	}
+	else
+	{
+		db.Exec(fmt::format("UPDATE students SET Name = '{}' WHERE ID = {};", info.name, info.id));
+		db.Exec(fmt::format("UPDATE students SET PhoneNumber = '{}' WHERE ID = {};",info.phone_number , info.id));
+		db.Exec(fmt::format("UPDATE students SET Sex = '{}' WHERE ID = {};",info.sex , info.id));
+		db.Exec(fmt::format("UPDATE students SET EnrollmentDate = '{}' WHERE ID = {};", info.enrollment_date, info.id));
+		db.Exec(fmt::format("UPDATE students SET CollegeName = '{}' WHERE ID = {};", info.college, info.id));
+		db.Exec(fmt::format("UPDATE students SET Password = '{}' WHERE ID = {};", info.password, info.id));
+		db.Exec(fmt::format("UPDATE students SET PermissionLevel = {} WHERE ID = {};", info.permission_level, info.id));
+		db.Exec(fmt::format("UPDATE students SET Notes = '{}' WHERE ID = {};", info.notes, info.id));
+		db.Exec(fmt::format("UPDATE students SET IsEnable = {} WHERE ID = {};", info.is_enable, info.id));
+		db.Exec(fmt::format("UPDATE students SET Email = '{}' WHERE ID = {};", info.email, info.id));
+	}
 }
 
 void Account::AccountManager::SetTeacherProperty(const TeacherBasicInfo& info)
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Teacher_Mutex);
-	RbsLib::Storage::StorageFile file(fmt::format("{}/{}.json", TEACHER_DIR, info.id));
-	neb::CJsonObject obj(file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
-	obj.ReplaceAdd("Name", info.name);
-	obj.ReplaceAdd("PhoneNumber", info.phone_number);
-	obj.ReplaceAdd("Email", info.email);
-	obj.ReplaceAdd("Sex", info.sex);
-	obj.ReplaceAdd("College", info.college);
-	obj.ReplaceAdd("Password", info.password);
-	obj.ReplaceAdd("PermissionLevel", info.permission_level);
-	obj.ReplaceAdd("Notes", info.notes);
-	obj.ReplaceAdd("IsEnable", info.is_enable);
-	file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin)
-		.Write(RbsLib::Buffer(obj.ToFormattedString()));
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT * FROM teachers WHERE ID = {};", info.id));
+	if (temp["ID"].size() == 0)
+	{
+		throw AccountException("These teacher not in the teachers' tables");
+	}
+	else
+	{
+		db.Exec(fmt::format("UPDATE teachers SET Name = '{}' WHERE ID = {};", info.name, info.id));
+		db.Exec(fmt::format("UPDATE teachers SET PhoneNumber = '{}' WHERE ID = {};", info.phone_number, info.id));
+		db.Exec(fmt::format("UPDATE teachers SET Sex = '{}' WHERE ID = {};", info.sex, info.id));
+		db.Exec(fmt::format("UPDATE teachers SET CollegeName = '{}' WHERE ID = {};", info.college, info.id));
+		db.Exec(fmt::format("UPDATE teachers SET Password = '{}' WHERE ID = {};", info.password, info.id));
+		db.Exec(fmt::format("UPDATE teachers SET PermissionLevel = {} WHERE ID = {};", info.permission_level, info.id));
+		db.Exec(fmt::format("UPDATE teachers SET Notes = '{}' WHERE ID = {};", info.notes, info.id));
+		db.Exec(fmt::format("UPDATE teachers SET IsEnable = {} WHERE ID = {};", info.is_enable, info.id));
+		db.Exec(fmt::format("UPDATE teachers SET Email = '{}' WHERE ID = {};", info.email, info.id));
+	}
 }
 
 auto Account::AccountManager::GetAllStudentInfo(void) -> std::vector<StudentBasicInfo>
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Student_Mutex);
-	std::vector<StudentBasicInfo> info_list;
-	RbsLib::Storage::StorageFile dir(STUDENT_DIR);
-	if (dir.IsExist() && dir.GetFileType() == RbsLib::Storage::FileType::FileType::Dir)
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec("SELECT * FROM students ");
+	if (temp["ID"].size() == 0)
 	{
-		for (const auto& it : dir)
-		{
-			if (it.GetExtension() == ".json" && it.GetFileType() == RbsLib::Storage::FileType::FileType::Regular)
-			{
-				info_list.push_back(GetStudentInfo(RbsLib::String::Convert::StringToNumber<std::uint64_t>(it.GetStem())));
-			}
-		}
+		throw AccountException("This students' tables is null");
 	}
-	return info_list;
+	else
+	{
+
+		std::vector<StudentBasicInfo> ret;
+		std::size_t n = temp["ID"].size();
+		for (std::size_t i = 0; i < n; i++)
+		{
+			StudentBasicInfo a;
+			a.id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["ID"][i]);
+			a.name = temp["Name"][i];
+			a.phone_number = temp["PhoneNumber"][i];
+			a.sex = temp["Sex"][i];
+			a.enrollment_date = temp["PermissionLevel"][i];
+			a.notes = temp["Notes"][i];
+			a.college = temp["CollegeName"][i];
+			a.class_name = temp["ClassName"][i];
+			a.password = temp["Password"][i];
+			a.permission_level = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["PermissionLevel"][i]);
+			a.is_enable = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["IsEnable"][i]);
+			a.email = temp["Email"][i];
+			ret.push_back(a);
+		}
+		return ret;
+	}
 }
 
 auto Account::AccountManager::GetAllTeacherInfo(void) -> std::vector<TeacherBasicInfo>
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Teacher_Mutex);
-	std::vector<TeacherBasicInfo> info_list;
-	RbsLib::Storage::StorageFile dir(TEACHER_DIR);
-	if (dir.IsExist() && dir.GetFileType() == RbsLib::Storage::FileType::FileType::Dir)
-	{
-		for (const auto& it : dir)
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec("SELECT * FROM teachers;");
+	
+		std::vector<TeacherBasicInfo> ret;
+		std::size_t n = temp["ID"].size();
+		for (std::size_t i = 0; i < n; i++)
 		{
-			if (it.GetExtension() == ".json" && it.GetFileType() == RbsLib::Storage::FileType::FileType::Regular)
-			{
-				info_list.push_back(GetTeacherInfo(RbsLib::String::Convert::StringToNumber<std::uint64_t>(it.GetStem())));
-			}
+			TeacherBasicInfo a;
+			a.id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["ID"][i]);
+			a.name = temp["Name"][i];
+			a.phone_number = temp["PhoneNumber"][i];
+			a.sex = temp["Sex"][i];
+			a.notes = temp["Notes"][i];
+			a.college = temp["CollegeName"][i];
+			a.password = temp["Password"][i];
+			a.permission_level = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["PermissionLevel"][i]);
+			a.is_enable = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["IsEnable"][i]);
+			a.email = temp["Email"][i];
+			ret.push_back(a);
 		}
-	}
-	return info_list;
+		return ret;
+	
 }
 
 void Account::AccountManager::ChangeStudentClass(std::uint64_t id, const std::string& new_class_name)
 {
-	std::unique_lock<std::shared_mutex> lock1(Global_Student_Mutex);
-	std::unique_lock<std::shared_mutex> lock2(Global_Classes_Mutex);
-	RbsLib::Storage::StorageFile file = CLASSES_FILE;
-	if (file.IsExist() == false)
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT * FROM students WHERE ID = {};", id));
+	if (temp["ID"].size() == 0)
 	{
-		throw AccountException("class not exist");
+		throw AccountException("These students not in the students' tables");
 	}
-	auto fp=file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
-	neb::CJsonObject obj;
-	obj.Parse(fp.Read(file.GetFileSize()).ToString());
-	if (obj.KeyExist(new_class_name) == false)
+	else
 	{
-		throw AccountException("class not exist");
+		db.Exec(fmt::format("UPDATE students SET ClassName = '{}' WHERE ID = {};", new_class_name, id));
 	}
-	obj[new_class_name]["Students"].Add(id);
-	RbsLib::Storage::StorageFile student_file = fmt::format("{}/{}.json", STUDENT_DIR, id);
-	if (student_file.IsExist() == false)
-	{
-		throw AccountException("student not exist");
-	}
-	fp = student_file.Open(RbsLib::Storage::FileIO::OpenMode::Read, RbsLib::Storage::FileIO::SeekBase::begin);
-	neb::CJsonObject stu_obj;
-	stu_obj.Parse(fp.Read(student_file.GetFileSize()).ToString());
-	obj[stu_obj("Class")]["Students"].GetArraySize();
-	for (int i = 0; i < obj[stu_obj("Class")]["Students"].GetArraySize(); i++)
-	{
-		std::uint64_t tmp;
-		obj[stu_obj("Class")]["Students"].Get(i, tmp);
-		if (tmp == id)
-			obj[stu_obj("Class")]["Students"].Delete(i);
-	}
-	stu_obj.Replace("Class", new_class_name);
-	fp = file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace,
-		RbsLib::Storage::FileIO::SeekBase::begin);
-	fp.Write(RbsLib::Buffer(obj.ToFormattedString()));
-	fp = student_file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace, RbsLib::Storage::FileIO::SeekBase::begin);
-	fp.Write(RbsLib::Buffer(stu_obj.ToFormattedString()));
 }
 void Account::ClassesManager::CreateClass(const std::string& class_name, std::uint64_t teacherID)
 {
-	//将班级信息存储在Classes.json文件中
-	std::unique_lock<std::shared_mutex> teacher_lock(Global_Teacher_Mutex);
-	std::unique_lock<std::shared_mutex> lock(Global_Classes_Mutex);
-	RbsLib::Storage::StorageFile classes_file(CLASSES_FILE);
-	if (classes_file.IsExist() == false) CreateDefaultClassesFile();
-	auto class_fp = classes_file.Open(RbsLib::Storage::FileIO::OpenMode::Read,
-		RbsLib::Storage::FileIO::SeekBase::begin);
-	auto buffer = class_fp.Read(classes_file.GetFileSize());
-	neb::CJsonObject class_json;
-	if (class_json.Parse(buffer.ToString()) == false)
-	{
-		Logger::LogError("配置文件%s解析失败，原因: %s", CLASSES_FILE, class_json.GetErrMsg());
-		std::abort();
-	}
-	//检查课程是否已经存在
-	if (class_json.KeyExist(class_name))
-		throw AccountException("Class is already exist");
-	//向老师文件添加
-	AddClassToTeacher(teacherID, class_name);
-	//保存课程信息
-	class_fp.Close();
-	neb::CJsonObject subjson;
-	subjson.Add("TeacherID", teacherID);
-	subjson.Add("CreateTime", Time::GetFormattedTime());
-	subjson.AddEmptySubArray("Students");
-	class_json.Add(class_name, subjson);
-	class_fp = classes_file.Open(RbsLib::Storage::FileIO::OpenMode::Write | RbsLib::Storage::FileIO::OpenMode::Replace,
-		RbsLib::Storage::FileIO::SeekBase::begin);
-	class_fp.Write(RbsLib::Buffer(class_json.ToFormattedString()));
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	db.Exec(fmt::format("INSERT INTO classes ('ClassName','TeacherID') VALUES('{}',{});", class_name, teacherID));
 }
 
 void Account::ClassesManager::DeleteClass(const std::string& class_name)
 {
-	//若班级中不存在学生，则删除班级及其相关信息，若存在学生则抛出异常
-	std::unique_lock<std::shared_mutex> teacher_lock(Global_Teacher_Mutex);
-	std::unique_lock<std::shared_mutex> lock(Global_Classes_Mutex);
-	using namespace RbsLib::Storage;
-	StorageFile file(CLASSES_FILE);
-	if (file.IsExist() == false) throw AccountException("Class not found");
-	neb::CJsonObject tobj(file.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
-	if (!tobj.KeyExist(class_name))
-		throw AccountException("Class not found");
-	if (tobj[class_name]["Students"].GetArraySize() > 0) throw AccountException("Can not delete class with students");
-	std::uint64_t teacher_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(tobj[class_name]("TeacherID"));
-	tobj.Delete(class_name);
-	file.Open(FileIO::OpenMode::Write | FileIO::OpenMode::Replace, FileIO::SeekBase::begin).Write(RbsLib::Buffer(tobj.ToFormattedString()));
-	//从教师文件中删除
-	RemoveClassFromTeacher(teacher_id, class_name);
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT ID FROM students WHERE ClassName = '{}';", class_name));
+	if (temp["ClassName"].size() == 0)
+	{
+		try
+		{
+			db.Exec(fmt::format("DELETE FROM classes WHERE ClassName = {}", class_name));
+		}
+		catch (const DataBase::DataBaseException& ex)
+		{
+			throw AccountException(std::string("Delete class failed : ") + ex.what());
+		}
+	}
+	else
+	{
+		throw AccountException("This class  in the students' tables");
+	}
 }
 
 bool Account::ClassesManager::IsClassExist(const std::string& class_name)
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Classes_Mutex);
-	using namespace RbsLib::Storage::FileIO;
-	RbsLib::Storage::StorageFile file(CLASSES_FILE);
-	if (file.IsExist())
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT ClassName FROM classes WHERE ClassName = {};", class_name));
+	if (temp["ClassName"].size() == 0)
 	{
-		auto fp = file.Open(OpenMode::Read, SeekBase::begin);
-		if (neb::CJsonObject(fp.Read(file.GetFileSize()).ToString()).KeyExist(class_name))
-			return true;
+		return false;
 	}
-	return false;
+	else return true;
 }
 
 auto Account::ClassesManager::GetClassInfo(const std::string& class_name) -> ClassInfo
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Classes_Mutex);
-	ClassInfo ret;
-	using namespace RbsLib::Storage;
-	StorageFile file(CLASSES_FILE);
-	if (file.IsExist() == false) throw AccountException("Class not found");
-	neb::CJsonObject tobj(file.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
-	if (!tobj.KeyExist(class_name))
-		throw AccountException("Class not found");
-	ret.name = class_name;
-	neb::CJsonObject obj;
-	tobj.Get(class_name, obj);
-	obj.Get("TeacherID", ret.teacher_id);
-	obj.Get("CreateTime", ret.create_time);
-	for (int i = 0; i < obj["Students"].GetArraySize(); ++i)
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec(fmt::format("SELECT * FROM classes WHERE ClassName = '{}';", class_name));
+	auto temp2 = db.Exec(fmt::format("SELECT ID FROM students WHERE ClassName = '{}';", class_name));
+	if (temp["ClassName"].size() == 0)
 	{
-		std::uint64_t temp;
-		obj["Students"].Get(i, temp);
-		ret.students.push_back(temp);
+		throw AccountException("These class not in the classes' tables");
 	}
-	return ret;
+		ClassInfo a;
+		a.create_time = temp["CreateTime"][0];
+		a.name = temp["Name"][0];
+		a.teacher_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["TeacherID"][0]);
+		for (const auto&it:temp2["ID"])
+		{
+			a.students.push_back(RbsLib::String::Convert::StringToNumber<std::uint64_t>(it));
+		}
+	return a;
 }
 
 auto Account::ClassesManager::GetAllClassInfo(void) -> std::vector<ClassInfo>
 {
-	std::shared_lock<std::shared_mutex> lock(Global_Classes_Mutex);
-	std::vector<ClassInfo> ret;
-	using namespace RbsLib::Storage;
-	StorageFile file(CLASSES_FILE);
-	if (file.IsExist() == false) throw AccountException("Class not found");
-	neb::CJsonObject obj(file.Open(FileIO::OpenMode::Read, FileIO::SeekBase::begin).Read(file.GetFileSize()).ToString());
-	std::string class_name;
-	while (obj.GetKey(class_name))
+	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
+	auto temp = db.Exec("SELECT * FROM classes ");
+	auto temp2 = db.Exec("SELECT ID FROM students ");
+	if (temp["ClassName"].size() == 0)
 	{
-		ret.push_back(GetClassInfo(class_name));
+		throw AccountException("This class' tables is null");
 	}
-	return ret;
+	else
+	{
+		std::vector<ClassInfo> ret;
+		std::size_t n = temp["ClassName"].size();
+		for (std::size_t i = 0; i < n; i++)
+		{
+			ClassInfo a;
+			a.create_time = temp["CreateTime"][0];
+			a.name = temp["Name"][0];
+			a.teacher_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["TeacherID"][0]);
+			for (const auto& it : temp2["ID"])
+			{
+				a.students.push_back(RbsLib::String::Convert::StringToNumber<std::uint64_t>(it));
+			}
+			ret.push_back(a);
+		}
+		return ret;
+	}
 }
 
 

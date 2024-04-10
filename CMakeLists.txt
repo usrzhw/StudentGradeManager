@@ -30,7 +30,7 @@ add_library(config STATIC ${CONFIG_LIB_HEADERS} "configuration_manager/configura
 target_link_libraries(config rbs json)
 
 #构建MODULE_SDK库
-add_library(module_sdk STATIC ${MODULE_SDK_HEADERS} "module_sdk/libs/module_sdk.cpp" ${RBS_LIB_HEADERS})
+add_library(module_sdk STATIC ${MODULE_SDK_HEADERS} "module_sdk/module_sdk.cpp" ${RBS_LIB_HEADERS})
 target_link_libraries(module_sdk rbs)
 
 #构建RBSLIB库
