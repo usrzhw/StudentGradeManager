@@ -17,6 +17,9 @@
 #include <thread>
 #include <mutex>
 #include <shared_mutex>
+#include <sys/sendfile.h>
+#include <sys/file.h>
+#include <memory>
 using namespace std;
 
 static std::shared_mutex Global_Module_List_Lock;
@@ -231,16 +234,17 @@ int main(int argc,const char**argv)
 		{
 			try
 			{
-				auto buffer = RbsLib::Storage::StorageFile("html")[RbsLib::Storage::StorageFile(m[1]).GetName()].Open(RbsLib::Storage::FileIO::OpenMode::Read,
-					RbsLib::Storage::FileIO::SeekBase::begin).Read(static_cast<int64_t>(1024) * 1024);
+				auto file = RbsLib::Storage::StorageFile("html")[RbsLib::Storage::StorageFile(m[1]).GetName()];
+				std::shared_ptr<int> fd(new int(open(file.Path().c_str(), O_RDONLY)), [](int* p) {if (*p != -1) close(*p); delete p; });
+				if (*fd == -1) throw std::runtime_error("文件打开失败");
+				std::size_t file_size = file.GetFileSize();
 				RbsLib::Network::HTTP::ResponseHeader header;
 				header.status = 200;
 				header.status_descraption = "ok";
-				header.headers.AddHeader("Content-Length", std::to_string(buffer.GetLength()));
+				header.headers.AddHeader("Content-Length", std::to_string(file_size));
 				header.headers.AddHeader("Content-Type", "text/html");
 				x.Send(header.ToBuffer());
-				x.Send(buffer);
-				
+				sendfile(x.GetSocket(),*fd, nullptr, file_size);
 			}
 			catch (const std::exception& ex)
 			{

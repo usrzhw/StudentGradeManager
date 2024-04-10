@@ -1,13 +1,13 @@
-#include "module_sdk.h"
+ï»¿#include "module_sdk.h"
 #include <iostream>
 
-//Á½¸öº¯Êý
+//ä¸¤ä¸ªå‡½æ•°
 void func1(const RbsLib::Network::HTTP::Request& request)
 {
 	std::cout << "test" << std::endl;
-	request.connection;//ÕâÊÇTCPÁ¬½Ó£¬Ïò¿Í»§¶Ë·µ»ØÊý¾ÝÒÀÀµ¸ÃÏî
-	request.header;//¿Í»§¶Ë·¢ËÍµÄHTTPÇëÇó±êÍ·
-	request.content;//¿Í»§¶Ë·¢ËÍµÄHTTPÇëÇóÄÚÈÝ(½öPOSTÇëÇóÓÐÐ§)
+	request.connection;//è¿™æ˜¯TCPè¿žæŽ¥ï¼Œå‘å®¢æˆ·ç«¯è¿”å›žæ•°æ®ä¾èµ–è¯¥é¡¹
+	request.header;//å®¢æˆ·ç«¯å‘é€çš„HTTPè¯·æ±‚æ ‡å¤´
+	request.content;//å®¢æˆ·ç«¯å‘é€çš„HTTPè¯·æ±‚å†…å®¹(ä»…POSTè¯·æ±‚æœ‰æ•ˆ)
 }
 void Login(const RbsLib::Network::HTTP::Request& request)
 {
@@ -31,19 +31,19 @@ void cmd_action(int argc, const char** argv)
 	}
 }
 
-//³õÊ¼»¯º¯Êý£¬ÓÃÓÚÄ£¿é×ÔÉíµÄ³õÊ¼»¯£¬Ö÷ÒªÊÇÃèÊöÄ£¿éÃû³Æ°æ±¾º¯ÊýµÈÐÅÏ¢
+//åˆå§‹åŒ–å‡½æ•°ï¼Œç”¨äºŽæ¨¡å—è‡ªèº«çš„åˆå§‹åŒ–ï¼Œä¸»è¦æ˜¯æè¿°æ¨¡å—åç§°ç‰ˆæœ¬å‡½æ•°ç­‰ä¿¡æ¯
 ModuleSDK::ModuleInfo Init(void)
 {
-	//´´½¨Ä£¿éÐÅÏ¢½á¹¹Ìå£¬²¢·Ö±ðÌîÈëÄ£¿éÃû³Æ¡¢°æ±¾¡¢ÃèÊö
-	ModuleSDK::ModuleInfo info("test", "1.0.0", "²âÊÔ");
+	//åˆ›å»ºæ¨¡å—ä¿¡æ¯ç»“æž„ä½“ï¼Œå¹¶åˆ†åˆ«å¡«å…¥æ¨¡å—åç§°ã€ç‰ˆæœ¬ã€æè¿°
+	ModuleSDK::ModuleInfo info("test", "1.0.0", "æµ‹è¯•");
 
-	//ÎªÄ£¿éÌí¼ÓÒ»¸öÃû³ÆÎªfuncµÄ·½·¨£¬µ±ÇëÇófunc·½·¨Ê±»áÖ´ÐÐfunc1º¯Êý
+	//ä¸ºæ¨¡å—æ·»åŠ ä¸€ä¸ªåç§°ä¸ºfuncçš„æ–¹æ³•ï¼Œå½“è¯·æ±‚funcæ–¹æ³•æ—¶ä¼šæ‰§è¡Œfunc1å‡½æ•°
 	info.Add("func", func1);
 
-	//ÔÙÌí¼ÓÒ»¸ö·½·¨
+	//å†æ·»åŠ ä¸€ä¸ªæ–¹æ³•
 	info.Add("login", Login);
 	info.AddCommand("cmd", cmd_action);
 
-	//½«Ä£¿éÐÅÏ¢·µ»Ø
+	//å°†æ¨¡å—ä¿¡æ¯è¿”å›ž
 	return info;
 }
