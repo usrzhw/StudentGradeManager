@@ -10,7 +10,6 @@
 #include "../rbslib/String.h"
 #include "libs/commandline.h"
 #include "libs/sqlite_cpp.h"
-
 static void SendError(const RbsLib::Network::TCP::TCPConnection& connection,
 	const std::string& message, int status)
 {
@@ -1470,6 +1469,6 @@ ModuleSDK::ModuleInfo Init(void)
 	db.Exec("CREATE TABLE IF NOT EXISTS subjects (ID INTEGER PRIMARY KEY,Name TEXT NOT NULL,Semester TEXT,Description TEXT,ClassRoom TEXT);");
 	db.Exec("CREATE TABLE IF NOT EXISTS students_subjects_relation (StudentID INTEGER NOT NULL,SubjectID INTEGER NOT NULL,Grade INTEGER,Notes TEXT);");
 	db.Exec("CREATE TABLE IF NOT EXISTS teachers_subjects_relation (TeacherID INTEGER NOT NULL,SubjectID INTEGER NOT NULL,Notes TEXT);");
-	//将模块信息返回
+	//将模块信息返回 
 	return info;
 }
