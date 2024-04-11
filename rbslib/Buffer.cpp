@@ -166,16 +166,17 @@ void RbsLib::Buffer::PushBack(char ch)
 
 void RbsLib::Buffer::AppendToEnd(const IBuffer& buffer)
 {
+	std::uint64_t buffer_len = buffer.GetLength();
 	if (this->length + buffer.GetLength() > this->size)
 	{
 		//需要重新分配空间
-		this->Resize(this->length + buffer.GetLength());
-		for (int i = 0; i < buffer.GetLength(); ++i)
+		this->Resize(this->size * 2 >= this->length + buffer_len ? this->size * 2 : this->length + buffer_len);
+		for (std::uint64_t i = 0; i < buffer_len; ++i)
 		{
 			((char*)this->data_ptr)[this->length++] = ((const char*)buffer.Data())[i];
 		}
 	}
-	for (int i = 0; i < buffer.GetLength(); ++i)
+	for (int i = 0; i < buffer_len; ++i)
 	{
 		((char*)this->data_ptr)[this->length++] = ((const char*)buffer.Data())[i];
 	}

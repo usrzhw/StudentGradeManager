@@ -1,10 +1,11 @@
-#pragma once
+﻿#pragma once
 #include <mutex>
 #include <memory>
 #include <exception>
 #include <string>
 #include <map>
 #include "../rbslib/Storage.h"
+#include "../rbslib/Commandline.h"
 #include "../module_sdk/module_sdk.h"
 namespace Module
 {
@@ -33,5 +34,7 @@ namespace Module
 		void UnloadModule(const std::string& module_name);
 		void UnloadAllModules(void);
 		ModuleSDK::ModuleAction_t GetAction(const std::string& module_name, const std::string& action_name);
+		void ExecuteCommand(const RbsLib::Command::CommandLine& cmd);
+		const std::map<std::string, ModuleObject>& GetModules(void)const;
 	};
 }

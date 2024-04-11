@@ -16,6 +16,15 @@ auto DataBase::SQLite::Open(const char* path) -> SQLite
     }
     db.refCount = new int(1);
     db.counter_mutex = new std::shared_mutex();
+    try
+    {
+		db.Exec("PRAGMA foreign_keys = ON;");
+	}
+    catch (DataBaseException&e)
+    {
+        db.Close();
+        throw DataBaseException(std::string("Init sqlite database failed: ")+e.what());
+    }
     return db;
 }
 

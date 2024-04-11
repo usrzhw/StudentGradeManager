@@ -8,7 +8,7 @@
 #include "../log/logger.h"
 #include "libs/generators.h"
 #include "../rbslib/String.h"
-#include "libs/commandline.h"
+
 #include "libs/sqlite_cpp.h"
 static void SendError(const RbsLib::Network::TCP::TCPConnection& connection,
 	const std::string& message, int status)
@@ -1453,6 +1453,14 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("delete_student", DeleteStudent);
 
 	//初始化模块模块
+	auto db = DataBase::SQLite::Open("user.db");
+	db.Exec("CREATE TABLE IF NOT EXISTS teachers (ID INTEGER PRIMARY KEY,Name TEXT NOT NULL,PhoneNumber TEXT,Sex TEXT,CollegeName TEXT, Password TEXT, PermissionLevel TINYINT, Notes TEXT, IsEnable TINYINT CHECK(IsEnable IN (0,1)), Email TEXT);");
+	db.Exec("CREATE TABLE IF NOT EXISTS classes (ClassName TEXT PRIMARY KEY,TeacherID INTEGER NOT NULL,CreateTime TEXT,FOREIGN KEY(TeacherID) REFERENCES teachers(ID));");
+	db.Exec("CREATE TABLE IF NOT EXISTS students (ID INTEGER PRIMARY KEY,Name TEXT NOT NULL,PhoneNumber TEXT,Sex TEXT,EnrollmentDate TEXT, CollegeName TEXT, ClassName TEXT, Password TEXT, PermissionLevel TINYINT, Notes TEXT, IsEnable TINYINT CHECK(IsEnable IN (0,1)), Email TEXT,FOREIGN KEY(ClassName) REFERENCES classes(ClassName));");
+	db.Exec("CREATE TABLE IF NOT EXISTS subjects (ID INTEGER PRIMARY KEY,Name TEXT NOT NULL,Semester TEXT,Description TEXT,ClassRoom TEXT);");
+	db.Exec("CREATE TABLE IF NOT EXISTS students_subjects_relation (StudentID INTEGER NOT NULL,SubjectID INTEGER NOT NULL,Grade INTEGER,Notes TEXT,FOREIGN KEY(StudentID) REFERENCES students(ID),FOREIGN KEY(SubjectID) REFERENCES subjects(ID),PRIMARY KEY(StudentID,SubjectID));");
+	db.Exec("CREATE TABLE IF NOT EXISTS teachers_subjects_relation (TeacherID INTEGER NOT NULL,SubjectID INTEGER NOT NULL,Notes TEXT,PRIMARY KEY(TeacherID,SubjectID),FOREIGN KEY(TeacherID) REFERENCES teachers(ID),FOREIGN KEY(SubjectID) REFERENCES subjects(ID));");
+	db.Close();
 	// 检查创建默认用户	
 	if (Account::AccountManager::GetAllTeacherInfo().empty())
 	{
@@ -1462,13 +1470,6 @@ ModuleSDK::ModuleInfo Init(void)
 		Account::AccountManager::CreateTeacher(id, "Administrator", "", "", "", "", password, "", 0);
 		Logger::LogInfo("已创建默认管理员用户，ID:%d,密码:%s,请及时记录并修改", id, password.c_str());
 	}
-	auto db = DataBase::SQLite::Open("user.db");
-	db.Exec("CREATE TABLE IF NOT EXISTS students (ID INTEGER PRIMARY KEY,Name TEXT NOT NULL,PhoneNumber TEXT,Sex TEXT,EnrollmentDate TEXT, CollegeName TEXT, ClassName TEXT, Password TEXT, PermissionLevel INTEGER, Notes TEXT, IsEnable INTEGER, Email TEXT);");
-	db.Exec("CREATE TABLE IF NOT EXISTS classes (ClassName PRIMARY KEY,TeacherID INTEGER NOT NULL,CreateTime TEXT);");
-	db.Exec("CREATE TABLE IF NOT EXISTS teachers (ID INTEGER PRIMARY KEY,Name TEXT NOT NULL,PhoneNumber TEXT,Sex TEXT,CollegeName TEXT, Password TEXT, PermissionLevel INTEGER, Notes TEXT, IsEnable INTEGER, Email TEXT);");
-	db.Exec("CREATE TABLE IF NOT EXISTS subjects (ID INTEGER PRIMARY KEY,Name TEXT NOT NULL,Semester TEXT,Description TEXT,ClassRoom TEXT);");
-	db.Exec("CREATE TABLE IF NOT EXISTS students_subjects_relation (StudentID INTEGER NOT NULL,SubjectID INTEGER NOT NULL,Grade INTEGER,Notes TEXT);");
-	db.Exec("CREATE TABLE IF NOT EXISTS teachers_subjects_relation (TeacherID INTEGER NOT NULL,SubjectID INTEGER NOT NULL,Notes TEXT);");
-	//将模块信息返回 
+	//将模块信息返回
 	return info;
 }
