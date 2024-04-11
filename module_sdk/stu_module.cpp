@@ -10,7 +10,6 @@
 #include "../rbslib/String.h"
 
 #include "libs/sqlite_cpp.h"
-
 static void SendError(const RbsLib::Network::TCP::TCPConnection& connection,
 	const std::string& message, int status)
 {
