@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <exception>
 #include <string>
 #include "BaseType.h"
@@ -50,7 +50,7 @@ namespace RbsLib
 		{
 			return *(T*)(this->data_ptr);
 		}
-		void SetData(const void* data, uint64_t data_size);
+		void SetData(const void* data, uint64_t data_size)override;
 		void SetLength(uint64_t len);
 		void Resize(uint64_t buffer_size);
 		void PushBack(char ch);

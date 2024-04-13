@@ -4,9 +4,9 @@ name: CMake on a single platform
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master","develop" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master","develop" ]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -29,7 +29,7 @@ jobs:
 
     - name: Install dependencies
       # Install any dependencies required for your project
-      run: sudo apt-get install -y libfmt-dev uuid-dev libsqlite3-dev
+      run: sudo apt update&&sudo apt-get install -y libfmt-dev uuid-dev libsqlite3-dev
 
     - name: Build
       # Build your program with the given configuration

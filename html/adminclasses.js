@@ -181,7 +181,7 @@ function CreateClassButton() {
 }
 
 async function CreateClass() {
-var class_name = document.getElementById("AClassName").value;
+    var class_name = document.getElementById("AClassName").value;
     var teacher_id = document.getElementById("ATeacherID").value;
     var result = await RequestJson("/app/stu.create_class",
         JSON.stringify({
@@ -189,11 +189,12 @@ var class_name = document.getElementById("AClassName").value;
             token: localStorage.getItem("token"),
             class_name: class_name,
             teacher_id: teacher_id
-        })).catch(error => {
+        })).then(() => {
+            Close();
+            switch_to_classes();
+        }).catch(error => {
             alert(error.toString());
         });
-    Close();
-    switch_to_classes();
 }
 
 function DeleteClassButtonClick(e) {

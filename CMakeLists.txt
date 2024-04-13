@@ -18,6 +18,7 @@ add_compile_options(-fPIC)
 file(GLOB RBS_LIB_HEADERS "rbslib/*.h")
 file(GLOB JSON_LIB_HEADERS "json/*.h")
 file(GLOB MODULE_LOADER_LIB_HEADERS "module_loader/*.h")
+file(GLOB CACHE_LIB_HEADERS "cache/*.h")
 file(GLOB LOG_LIB_HEADERS "log/*.h")
 set(MODULE_SDK_HEADERS "module_sdk/module_sdk.h")
 file (GLOB CONFIG_LIB_HEADERS "configuration_manager/*.h")
@@ -46,6 +47,11 @@ file(GLOB MODULE_LOADER_LIB_SRC "module_loader/*.cpp")
 add_library(moduleloader STATIC ${MODULE_LOADER_LIB_SRC} ${MODULE_LOADER_LIB_HEADERS} ${MODULE_SDK_HEADERS} ${RBS_LIB_HEADERS})
 target_link_libraries(moduleloader "dl" rbs module_sdk)
 
+#构建缓存库
+file(GLOB CACHE_LIB_SRC "cache/*.cpp")
+add_library(cachelib STATIC ${CACHE_LIB_SRC} ${CACHE_LIB_HEADERS} ${RBS_LIB_HEADERS})
+target_link_libraries(cachelib rbs)
+
 #生成测试模块
 add_library(test_module SHARED ${MODULE_SDK_HEADERS} ${RBS_LIB_HEADERS} "module_sdk/test.cpp")
 target_link_libraries(test_module moduleloader)
@@ -66,9 +72,6 @@ file(GLOB HTML_FILES "${CMAKE_BINARY_DIR}/html/*")
 add_executable(StudentGradeManager  "StudentGradeManager.cpp" ${LOG_LIB_HEADERS} ${RBS_LIB_HEADERS} ${MODULE_LOADER_LIB_HEADERS})
 target_sources(StudentGradeManager PUBLIC ${HTML_FILES})
 target_link_libraries(StudentGradeManager rbs moduleloader logger config)
-
-
-
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET StudentGradeManager PROPERTY CXX_STANDARD 20)
