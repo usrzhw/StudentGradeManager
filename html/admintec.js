@@ -182,9 +182,10 @@ async function CreateStudent() {
         notes: document.getElementById("ANotesBox").value,
         permission_level: document.getElementById("APermissionLevelBox").value,
         password: document.getElementById("APasswordBox").value,
-    })).catch(error => {
+    })).then(() => {
+        Close();
+        ShowTeachersList();
+    }).catch(error => {
         alert("创建教师失败:" + error.toString());
     });
-    Close();
-    ShowTeachersList();
 }

@@ -209,10 +209,11 @@ async function CreateStudent() {
         notes: document.getElementById("ANotesBox").value,
         permission_level: document.getElementById("APermissionLevelBox").value,
         password: document.getElementById("APasswordBox").value,
-    })).catch(error => {
+    })).then(()=> {
+        Close();
+    }).catch(error => {
         alert("创建学生失败:" + error.toString());
     });
-    Close();
     ShowStudentList();
 }
 

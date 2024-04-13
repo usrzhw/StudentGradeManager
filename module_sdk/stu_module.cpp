@@ -492,8 +492,8 @@ static void ChangeEnrollmentDate(const RbsLib::Network::HTTP::Request& request)
 		{
 			info.phone_number = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("enrollment_date"));
 			Account::AccountManager::SetStudentProperty(info);
-			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的入学时间修改为%d", basic_info.ID, basic_info.name.c_str(),
-				info.id, info.name.c_str(), info.enrollment_date);
+			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的入学时间修改为%s", basic_info.ID, basic_info.name.c_str(),
+				info.id, info.name.c_str(), info.enrollment_date.c_str());
 		}
 		else return SendError(request.connection, "permission denied", 403);
 	}

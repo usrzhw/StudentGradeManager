@@ -73,9 +73,6 @@ add_executable(StudentGradeManager  "StudentGradeManager.cpp" ${LOG_LIB_HEADERS}
 target_sources(StudentGradeManager PUBLIC ${HTML_FILES})
 target_link_libraries(StudentGradeManager rbs moduleloader logger config)
 
-
-
-
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET StudentGradeManager PROPERTY CXX_STANDARD 20)
 endif()

@@ -72,7 +72,6 @@ static void ExitProgram()
 {
 	Logger::LogInfo("正在退出服务器");
 	IsExitProgram = true;
-	fcloseall();
 	exit(0);
 }
 
