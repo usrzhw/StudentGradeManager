@@ -8,9 +8,8 @@
 #include "../log/logger.h"
 #include "libs/generators.h"
 #include "../rbslib/String.h"
-#include "libs/commandline.h"
-#include "libs/sqlite_cpp.h"
 
+#include "libs/sqlite_cpp.h"
 static void SendError(const RbsLib::Network::TCP::TCPConnection& connection,
 	const std::string& message, int status)
 {
@@ -680,7 +679,7 @@ static void ChangeNotes(const RbsLib::Network::HTTP::Request& request)
 		{
 			info.notes = obj("notes");
 			Account::AccountManager::SetStudentProperty(info);
-			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的备注修改为%s", basic_info.ID, basic_info.name.c_str(),
+			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的备注修改为\"%s\"", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.notes.c_str());
 		}
 		else return SendError(request.connection, "permission denied", 403);
@@ -692,7 +691,7 @@ static void ChangeNotes(const RbsLib::Network::HTTP::Request& request)
 		{
 			info.notes = obj("notes");
 			Account::AccountManager::SetTeacherProperty(info);
-			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的备注修改为%s", basic_info.ID, basic_info.name.c_str(),
+			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的备注修改为\"%s\"", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.notes.c_str());
 		}
 		else return SendError(request.connection, "permission denied", 403);
@@ -1119,7 +1118,7 @@ static void CreateSubject(const RbsLib::Network::HTTP::Request& request)
 	}
 	catch (const std::exception& ex)
 	{
-		Logger::LogError("创建课程失败");
+		Logger::LogError("创建课程失败: %s",ex.what());
 	}
 	obj.Clear();
 	obj.Add("id", subject_id);

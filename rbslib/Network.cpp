@@ -2,6 +2,8 @@
 #include <thread>
 #include <regex>
 #include <sstream>
+#include <cstring>
+#include <cerrno>
 #include "TaskPool.h"
 namespace net = RbsLib::Network;
 
@@ -92,8 +94,15 @@ void RbsLib::Network::TCP::TCPServer::Bind(int port, const std::string& address)
 #endif // linux
 
 
-	if (bind(this->server_socket, (struct sockaddr*)&s_sin, sizeof(s_sin)) !=0)
-		throw net::NetworkException("Bind failed");
+	if (bind(this->server_socket, (struct sockaddr*)&s_sin, sizeof(s_sin)) != 0)
+	{
+		std::string reason = "Bind failed";
+#ifdef LINUX
+		reason += ": ";
+		reason += strerror(errno);
+#endif // linux
+		throw net::NetworkException(reason);
+	}
 	this->is_bind = true;
 
 }
