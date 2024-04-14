@@ -2,12 +2,15 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <memory>
+#include <fmt/format.h>
 #include "../json/CJsonObject.h"
 #include "libs/user.h"
 #include "libs/login.h"
 #include "../log/logger.h"
 #include "libs/generators.h"
 #include "../rbslib/String.h"
+#include "../rbslib/Commandline.h"
 
 #include "libs/sqlite_cpp.h"
 static void SendError(const RbsLib::Network::TCP::TCPConnection& connection,
@@ -494,6 +497,51 @@ static void ChangeEnrollmentDate(const RbsLib::Network::HTTP::Request& request)
 			Account::AccountManager::SetStudentProperty(info);
 			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的入学时间修改为%s", basic_info.ID, basic_info.name.c_str(),
 				info.id, info.name.c_str(), info.enrollment_date.c_str());
+		}
+		else return SendError(request.connection, "permission denied", 403);
+	}
+	else return SendError(request.connection, "permission denied", 403);
+	obj.Clear();
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
+static void ChangeEmail(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查权限
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+	{
+		SendError(request.connection, "invailed token", 403);
+		return;
+	}
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);
+	target_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("target_id"));
+	if (target_id == 0) return SendError(request.connection, "参数错误", 422);
+	if (Generator::IsStudentID(target_id) && Account::AccountManager::IsStudentExist(target_id))
+	{
+		auto info = Account::AccountManager::GetStudentInfo(target_id);
+		if ((basic_info.permission_level == 0 || info.permission_level > basic_info.permission_level && info.is_enable))
+		{
+			info.email = obj("email");
+			Account::AccountManager::SetStudentProperty(info);
+			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的邮箱修改为%s", basic_info.ID, basic_info.name.c_str(),
+				info.id, info.name.c_str(), info.email.c_str());
+		}
+		else return SendError(request.connection, "permission denied", 403);
+	}
+	else if (Generator::IsTeacherID(target_id) && Account::AccountManager::IsTeacherExist(target_id))
+	{
+		auto info = Account::AccountManager::GetTeacherInfo(target_id);
+		if ((basic_info.permission_level == 0 || info.permission_level > basic_info.permission_level && info.is_enable))
+		{
+			info.email = obj("email");
+			Account::AccountManager::SetTeacherProperty(info);
+			Logger::LogInfo("用户[%d:%s]将用户[%d:%s]的邮箱修改为%s", basic_info.ID, basic_info.name.c_str(),
+				info.id, info.name.c_str(), info.email.c_str());
 		}
 		else return SendError(request.connection, "permission denied", 403);
 	}
@@ -1410,6 +1458,145 @@ static void DeleteStudent(const RbsLib::Network::HTTP::Request& request)
 	return SendSuccessResponse(request.connection, obj);
 }
 
+static void CommandLine(int argc, const char** argv)
+{
+	RbsLib::Command::CommandExecuter executer("stu", false);
+	executer["stu"].CreateOption("create", false);
+	executer["stu"]["create"].CreateOption("teacher", true);
+	executer["stu"]["create"]["teacher"].SetFunction([](const std::map<std::string, std::string>& m) {
+		Logger::LogInfo("name:%s", m.at("teacher").c_str());
+		});
+	executer["stu"].CreateOption("help", false);
+	executer["stu"]["help"].SetFunction([](const std::map<std::string, std::string>& m) {
+		Logger::LogInfo("学生成绩管理系统");
+		Logger::LogInfo("命令列表:");
+		Logger::LogInfo("stu create (teacher/student/class/subject)  创建学生或教师");
+		Logger::LogInfo("stu help  获取帮助");
+		});
+	executer.Execute(argc, argv);
+	/*
+	std::map<std::string, std::string> args;
+	
+	struct CmdTree {
+		std::map<std::string, std::pair<bool,CmdTree*>> children;
+		std::function<void(const std::map<std::string, std::string>&)> func;
+	};
+	std::list<CmdTree*> objs;
+	try
+	{
+		auto make_node = [&objs]() {
+			auto node = new CmdTree();
+			objs.push_back(node);
+			return node;
+			};
+		CmdTree* root = make_node(), * temp;
+		root->func = [](const std::map<std::string, std::string>& args) {
+			Logger::LogInfo("学生成绩管理系统模块");
+			};
+		//root表示根节点
+		root->children["stu"].first = false;
+		temp = root->children["stu"].second = make_node();
+		temp->func = [](const std::map<std::string, std::string>& args) {
+			Logger::LogInfo("学生成绩管理系统模块,使用参数--help获取帮助");
+			};
+		temp->children["--help"].first = false;
+		temp->children["--help"].second = make_node();
+		temp->children["--help"].second->func = [](const std::map<std::string, std::string>& args) {
+			Logger::LogInfo("学生成绩管理系统模块");
+			Logger::LogInfo("命令列表:");
+			Logger::LogInfo("stu create (teacher/student/class/subject)  创建学生或教师");
+			Logger::LogInfo("stu help  获取帮助");
+			};
+		temp->children["create"].first = false;
+		temp =temp->children["create"].second = make_node();
+		temp->children["teacher"].first = false;
+		temp = temp->children["teacher"].second = make_node();
+		temp->func = [](const std::map<std::string, std::string>& args) {
+			if (args.find("--name") == args.end() || args.find("--password") == args.end() || args.find("--permission") == args.end())
+			{
+				Logger::LogError("缺少参数,使用--help参数查看帮助");
+				return;
+			}
+			std::string name = args.at("--name");
+			std::string password = args.at("--password");
+			std::string permission = args.at("--permission");
+			std::string phone_number = args.find("--phone_number") == args.end() ? "" : args.at("--phone_number");
+			std::string email = args.find("--email") == args.end() ? "" : args.at("--email");
+			std::string notes = args.find("--notes") == args.end() ? "" : args.at("--notes");
+			std::string college = args.find("--college") == args.end() ? "" : args.at("--college");
+			std::string sex = args.find("--sex") == args.end() ? "" : args.at("--sex");
+			std::uint64_t teacher_id;
+			Account::AccountManager::CreateTeacher(teacher_id = Generator::TeacherIDGenerator(), name, phone_number, email, sex, college, password, notes, std::stoi(permission));
+			Logger::LogInfo("创建教师成功,工号为: %s",fmt::format("{}",teacher_id).c_str());
+			};
+		temp->children["--name"] = { true,temp };
+		temp->children["--password"] = { true,temp };
+		temp->children["--permission"] = { true,temp };
+		temp->children["--phone_number"] = { true,temp };
+		temp->children["--email"] = { true,temp };
+		temp->children["--notes"] = { true,temp };
+		temp->children["--college"] = { true,temp };
+		temp->children["--sex"] = { true,temp };
+		temp->children["--help"].first = false;
+		temp->children["--help"].second = make_node();
+		temp->children["--help"].second->func = [](const std::map<std::string, std::string>& args) {
+			Logger::LogInfo("创建教师");
+			Logger::LogInfo("参数列表:");
+			Logger::LogInfo("--name <name>  教师姓名");
+			Logger::LogInfo("--password <password>  密码");
+			Logger::LogInfo("--permission <permission>  权限等级");
+			Logger::LogInfo("--phone_number <phone_number>  电话号码");
+			Logger::LogInfo("--email <email>  邮箱");
+			Logger::LogInfo("--notes <notes>  备注");
+			Logger::LogInfo("--college <college>  学院");
+			};
+
+		//执行命令
+		temp = root;
+		for (int i = 0; i < argc; ++i)
+		{
+			auto& arg = argv[i];
+			if (temp->children.find(arg) == temp->children.end())
+			{
+				Logger::LogError("未知参数: \"%s\"", arg);
+				return;
+			}
+			auto& it = temp->children[arg];
+			if (it.first == false)
+			{
+				temp = it.second;
+			}
+			else
+			{
+				if (i + 1 >= argc)
+				{
+					Logger::LogError("参数\"%s\"缺少值", arg);
+					return;
+				}
+				args[arg] = argv[i + 1];
+				++i;
+			}
+		}
+		if (temp->func!=nullptr)
+			temp->func(args);
+		else
+		{
+			Logger::LogError("未知参数");
+		}
+	}
+	catch (...) {
+		for (auto& it : objs)
+		{
+			delete it;
+		}
+		throw;
+	}
+	for (auto& it : objs)
+	{
+		delete it;
+	}
+	*/
+}
 
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
 ModuleSDK::ModuleInfo Init(void)
@@ -1430,6 +1617,7 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("change_phone_number", ChangePhoneNumber);
 	info.Add("change_enrollment_date", ChangeEnrollmentDate);
 	info.Add("change_college", ChangeCollege);
+	info.Add("change_email", ChangeEmail);
 	info.Add("change_password", ChangePassword);
 	info.Add("change_permission_level", ChangePermissionLevel);
 	info.Add("change_notes", ChangeNotes);
@@ -1451,6 +1639,8 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("delete_empty_class", DeleteEmptyClass);
 	info.Add("change_student_class", ChangeStudentClass);
 	info.Add("delete_student", DeleteStudent);
+
+	info.AddCommand("stu", CommandLine);
 
 	//初始化模块模块
 	auto db = DataBase::SQLite::Open("user.db");

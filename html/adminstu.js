@@ -115,7 +115,14 @@ async function Makesure() {
         });
     }
     if (document.getElementById("EMailBox").value != opened_student_info.email) {
-        alert("邮箱暂不支持修改");
+        await RequestJson("/app/stu.change_email", JSON.stringify({
+            ID: localStorage.getItem("id"),
+            token: localStorage.getItem("token"),
+            target_id: student_id,
+            email: document.getElementById("EMailBox").value
+        })).catch(error => {
+            alert("修改邮箱失败:" + error.toString());
+        });
     }
     if (document.getElementById("ClassBox").value != opened_student_info.class_name) {
         await RequestJson("/app/stu.change_student_class", JSON.stringify({

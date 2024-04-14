@@ -1,4 +1,13 @@
 #include "Commandline.h"
+#include "Commandline.h"
+#include "Commandline.h"
+#include "Commandline.h"
+#include "Commandline.h"
+#include "Commandline.h"
+#include "Commandline.h"
+#include "Commandline.h"
+#include "Commandline.h"
+#include "Commandline.h"
 #include <exception>
 
 using namespace RbsLib::Command;
@@ -101,4 +110,89 @@ void CommandLine::Clear()
 void CommandLine::Push(const std::string& arg)
 {
 	this->args.push_back(arg);
+}
+
+
+
+auto RbsLib::Command::CommandExecuter::operator[](const std::string& str) -> CommandNode&
+{
+	return root[str];
+}
+
+CommandExecuter::CommandExecuter(const std::string& root,bool have_extra_option)
+	:root(&this->nodes)
+{
+	this->root.CreateOption(root, have_extra_option);
+}
+
+RbsLib::Command::CommandExecuter::~CommandExecuter()
+{
+	for (auto it : this->nodes)
+	{
+		delete it;
+	}
+}
+
+void RbsLib::Command::CommandExecuter::Execute(int argc, const char** argv)
+{
+	CommandNode* ptr = &this->root;
+	for (int i = 0; i < argc; ++i)
+	{
+		if (ptr->HaveOption(argv[i]))
+		{
+			if (i + 1 < argc)
+				this->args[argv[i]] = argv[i + 1];
+			else throw std::runtime_error("Parameters are missing");
+			ptr = &(*ptr)[argv[i]];
+			++i;
+		}
+		else
+		{
+			ptr = &(*ptr)[argv[i]];
+		}
+	}
+	ptr->operator()(this->args);
+}
+
+auto RbsLib::Command::CommandExecuter::CommandNode::operator[](const std::string& str) -> CommandNode&
+{
+	if (this->children.find(str) != this->children.end())
+	{
+		return *this->children[str].second;
+	}
+	else
+	{
+		throw std::runtime_error("No such option");
+	}
+}
+
+void RbsLib::Command::CommandExecuter::CommandNode::operator()(const std::map<std::string, std::string>& args)
+{
+	this->func(args);
+}
+
+void RbsLib::Command::CommandExecuter::CommandNode::SetFunction(const std::function<void(const std::map<std::string, std::string>&)>& func)
+{
+	this->func = func;
+}
+
+auto CommandExecuter::CommandNode::CreateOption(const std::string& option, bool have_extra_arg) -> CommandNode&
+{
+	auto x = new CommandNode(this->nodes);
+	this->nodes->push_back(x);
+	this->children[option] = { have_extra_arg,x };
+}
+
+RbsLib::Command::CommandExecuter::CommandNode::CommandNode(std::list<CommandNode*>* nodes)
+	:nodes(nodes)
+{
+}
+
+bool RbsLib::Command::CommandExecuter::CommandNode::HaveOption(const std::string& option)
+{
+	if (this->children.find(option) == this->children.end())
+	{
+		throw std::runtime_error("No such option");
+	}
+	return this->children[option].first;
 }
