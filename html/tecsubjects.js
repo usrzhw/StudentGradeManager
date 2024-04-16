@@ -17,7 +17,7 @@ function switch_to_subjects() {
     document.getElementById("ButtomDiv").textContent = "";
     document.getElementById("chose_bar").innerHTML = "";
     document.getElementById("FormBody").innerHTML = "";
-    document.getElementById("FormHeader").innerHTML="<tr><th>课程编号</th><th>课程名称</th></tr>"
+    document.getElementById("FormHeader").innerHTML ="<tr><th>课程编号</th><tr><th>开课时间</th><th>教室</th><th>课程名称</th></tr>"
     fetch("/app/stu.get_teacher_subjects",
         {
             method: "POST",
@@ -41,6 +41,8 @@ function switch_to_subjects() {
                 var str = "" +
                     "<tr onclick=\"item_click(this)\">" +
                     "<td>" + it.id + "</td>" +
+                    "<td>" + it.semester + "</td>" +
+                    "<td>"+ it.classroom + "</td>" +
                     "<td>" + it.name + "</td>" +
                     "</tr>";
                 document.getElementById("FormBody").innerHTML += str;

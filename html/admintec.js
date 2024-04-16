@@ -196,3 +196,17 @@ async function CreateStudent() {
         alert("创建教师失败:" + error.toString());
     });
 }
+
+async function DeleteTeacher() {
+    if (window.confirm("确定删除该教师吗？")) {
+        await RequestJson("/app/stu.delete_teacher", JSON.stringify({
+            ID: localStorage.getItem("id"),
+            token: localStorage.getItem("token"),
+            target_id: opened_teacher_id
+        })).catch(error => {
+            alert("删除教师失败:" + error.toString());
+        });
+    }
+    Close();
+    ShowTeachersList();
+}
