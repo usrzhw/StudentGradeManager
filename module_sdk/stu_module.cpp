@@ -13,6 +13,32 @@
 #include "../rbslib/Commandline.h"
 
 #include "libs/sqlite_cpp.h"
+
+static inline void PrintStudentInfo(const Account::StudentBasicInfo& it)
+{
+	Logger::LogInfo("姓名: %s", it.name.c_str());
+	Logger::LogInfo("学号: %ld", it.id);
+	Logger::LogInfo("班级: %s", it.class_name.c_str());
+	Logger::LogInfo("性别: %s", it.sex.c_str());
+	Logger::LogInfo("学院: %s", it.college.c_str());
+	Logger::LogInfo("入学时间: %s", it.enrollment_date.c_str());
+	Logger::LogInfo("电话号码: %s", it.phone_number.c_str());
+	Logger::LogInfo("邮箱: %s", it.email.c_str());
+	Logger::LogInfo("权限等级: %d", it.permission_level);
+	Logger::LogInfo("备注: %s", it.notes.c_str());
+}
+static inline void PrintTeacherInfo(const Account::TeacherBasicInfo& it)
+{
+	Logger::LogInfo("姓名: %s", it.name.c_str());
+	Logger::LogInfo("学号: %ld", it.id);
+	Logger::LogInfo("性别: %s", it.sex.c_str());
+	Logger::LogInfo("学院: %s", it.college.c_str());
+	Logger::LogInfo("电话号码: %s", it.phone_number.c_str());
+	Logger::LogInfo("邮箱: %s", it.email.c_str());
+	Logger::LogInfo("权限等级: %d", it.permission_level);
+	Logger::LogInfo("备注: %s", it.notes.c_str());
+}
+
 static void SendError(const RbsLib::Network::TCP::TCPConnection& connection,
 	const std::string& message, int status)
 {
@@ -816,6 +842,8 @@ static void GetTeacherSubjects(const RbsLib::Network::HTTP::Request& request)
 					auto subinfo = Account::SubjectManager::GetSubjectInfo(it);
 					subobj.Add("name", subinfo.name);
 					subobj.Add("id", subinfo.id);
+					subobj.Add("semester", fmt::format("{}-{}:{}", subinfo.semester_start, subinfo.semester_end, subinfo.semester));
+					subobj.Add("classroom", subinfo.classroom);
 					obj["subjects"].Add(subobj);
 				}
 			}
@@ -1458,144 +1486,186 @@ static void DeleteStudent(const RbsLib::Network::HTTP::Request& request)
 	return SendSuccessResponse(request.connection, obj);
 }
 
+static void DeleteTeacher(const RbsLib::Network::HTTP::Request& request)
+{
+	neb::CJsonObject obj(request.content.ToString());
+	RbsLib::Network::HTTP::ResponseHeader header;
+	//检查登录信息
+	std::uint64_t ID, target_id = 0;
+	std::stringstream(obj("ID")) >> ID;
+	if (false == Account::LoginManager::CheckToken(ID, obj("token")))
+		return SendError(request.connection, "invailed token", 403);
+	auto basic_info = Account::LoginManager::GetOnlineUserInfo(ID);//获取在线用户信息
+	//判断权限
+	if (basic_info.permission_level != 0) return SendError(request.connection, "permission denied", 403);
+	//获取目标ID
+	target_id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(obj("target_id"));
+	if (target_id == ID) return SendError(request.connection, "不能删除自己", 422);
+	//检查目标学生是否存在
+	if (Generator::IsTeacherID(target_id) == false || Account::AccountManager::IsTeacherExist(target_id) == false)
+		return SendError(request.connection, "教师不存在", 422);
+	//检查目标教师是否为班主任
+	if (Account::AccountManager::GetTeacherInfo(target_id).classes.size())
+		return SendError(request.connection, "教师为班主任，无法删除", 422);
+	//删除学生
+	Account::AccountManager::DeleteTeacher(target_id);
+	Logger::LogInfo("用户[%d:%s]删除了教师[%ld]", basic_info.ID, basic_info.name.c_str(), target_id);
+	obj.Clear();
+	obj.Add("message", "ok");
+	return SendSuccessResponse(request.connection, obj);
+}
+
 static void CommandLine(int argc, const char** argv)
 {
-	RbsLib::Command::CommandExecuter executer("stu", false);
-	executer["stu"].CreateOption("create", false);
-	executer["stu"]["create"].CreateOption("teacher", true);
-	executer["stu"]["create"]["teacher"].SetFunction([](const std::map<std::string, std::string>& m) {
-		Logger::LogInfo("name:%s", m.at("teacher").c_str());
+	RbsLib::Command::CommandExecuter executer;
+	executer.SetOutputCallback([](const std::string& message) {
+		Logger::LogInfo("%s", message.c_str());
 		});
-	executer["stu"].CreateOption("help", false);
-	executer["stu"]["help"].SetFunction([](const std::map<std::string, std::string>& m) {
-		Logger::LogInfo("学生成绩管理系统");
-		Logger::LogInfo("命令列表:");
-		Logger::LogInfo("stu create (teacher/student/class/subject)  创建学生或教师");
-		Logger::LogInfo("stu help  获取帮助");
+	executer.CreateSubOption("stu", 0, "学生成绩管理模块");
+	executer["stu"].CreateSubOption("-h", 0, "教师管理模块", false, [](const auto&) {
+		Logger::LogInfo("学生成绩管理模块CLI模式目的为防止管理员无法登录，因此仅提供基础命令用于恢复访问权限");
+		Logger::LogInfo("stu create 创建对象");
+		Logger::LogInfo("stu list 查看对象信息");
+		Logger::LogInfo("命令具体用法请在命令后使用参数-h获取");
+		});
+	executer["stu"].CreateSubOption("create", 0, "创建数据信息", 1);
+	executer["stu"]["create"].CreateSubOption("teacher",0,"创建教师",true, [](const RbsLib::Command::CommandExecuter::Args& args) {
+		if (args.find("--name") == args.end() || args.find("--password") == args.end() || args.find("--permission") == args.end())
+		{
+			Logger::LogError("缺少参数,使用--help参数查看帮助");
+			return;
+		}
+		std::string name = *args.at("--name").begin();
+		std::string password = *args.at("--password").begin();
+		std::string permission = *args.at("--permission").begin();
+		std::string phone_number = args.find("--phonenumber") == args.end() ? "" : *args.at("--phonenumber").begin();
+		std::string email = args.find("--email") == args.end() ? "" : *args.at("--email").begin();
+		std::string notes = args.find("--notes") == args.end() ? "" : *args.at("--notes").begin();
+		std::string college = args.find("--college") == args.end() ? "" : *args.at("--college").begin();
+		std::string	sex = args.find("--sex") == args.end() ? "" : *args.at("--sex").begin();
+		std::uint64_t teacher_id = Generator::TeacherIDGenerator();
+		Account::AccountManager::CreateTeacher(teacher_id, name, phone_number, email, sex, college, password, notes, std::stoi(permission));
+		Logger::LogInfo("创建教师成功，工号: %s",  std::to_string(teacher_id).c_str());
+		});
+	executer["stu"]["create"]["teacher"].CreateSelfReferenceOption("--name", 1, "姓名(必选)");
+	executer["stu"]["create"]["teacher"].CreateSelfReferenceOption("--password", 1, "密码(必选)");
+	executer["stu"]["create"]["teacher"].CreateSelfReferenceOption("--sex", 1, "性别");
+	executer["stu"]["create"]["teacher"].CreateSelfReferenceOption("--phonenumber", 1, "手机号码");
+	executer["stu"]["create"]["teacher"].CreateSelfReferenceOption("--email", 1, "电子邮箱");
+	executer["stu"]["create"]["teacher"].CreateSelfReferenceOption("--college", 1, "学院");
+	executer["stu"]["create"]["teacher"].CreateSelfReferenceOption("--permission", 1, "权限等级(0-4)，数值越低权限越高(必选)");
+	executer["stu"]["create"]["teacher"].CreateSelfReferenceOption("--notes", 1, "备注");
+
+	executer["stu"]["create"].CreateSubOption("student", 0, "创建学生", true, [](const RbsLib::Command::CommandExecuter::Args& args) {
+		if (args.find("--name") == args.end() || args.find("--password") == args.end() || args.find("--permission") == args.end() || args.find("--class") == args.end())
+		{
+			Logger::LogError("缺少参数,使用--help参数查看帮助");
+			return;
+		}
+		std::string name = *args.at("--name").begin();
+		std::string password = *args.at("--password").begin();
+		std::string permission = *args.at("--permission").begin();
+		std::string phone_number = args.find("--phonenumber") == args.end() ? "" : *args.at("--phonenumber").begin();
+		std::string email = args.find("--email") == args.end() ? "" : *args.at("--email").begin();
+		std::string notes = args.find("--notes") == args.end() ? "" : *args.at("--notes").begin();
+		std::string college = args.find("--college") == args.end() ? "" : *args.at("--college").begin();
+		std::string classname = args.find("--class") == args.end() ? "" : *args.at("--class").begin();
+		std::string enrollment_date = args.find("--enrollment_date") == args.end() ? "" : *args.at("--enrollment_date").begin();
+		std::string sex = args.find("--sex") == args.end() ? "" : *args.at("--sex").begin();
+
+		std::uint64_t student_id = Generator::StudentsIDGenerator();
+		//判断班级是否存在
+		if (Account::ClassesManager::IsClassExist(classname) == false)
+		{
+			Logger::LogError("班级不存在");
+			return;
+		}
+		Account::AccountManager::CreateStudent(student_id, name, phone_number, email, sex, enrollment_date, password, college, classname, notes, std::stoi(permission));
+		Logger::LogInfo("创建学生成功，学号: %s", std::to_string(student_id).c_str());
+		});
+	executer["stu"]["create"]["student"].CreateSelfReferenceOption("--name", 1, "姓名(必选)");
+	executer["stu"]["create"]["student"].CreateSelfReferenceOption("--password", 1, "密码(必选)");
+	executer["stu"]["create"]["student"].CreateSelfReferenceOption("--sex", 1, "性别");
+	executer["stu"]["create"]["student"].CreateSelfReferenceOption("--phonenumber", 1, "手机号码");
+	executer["stu"]["create"]["student"].CreateSelfReferenceOption("--enrollment_date", 1, "入学日期");
+	executer["stu"]["create"]["student"].CreateSelfReferenceOption("--class", 1, "班级(必选)");
+	executer["stu"]["create"]["student"].CreateSelfReferenceOption("--email", 1, "电子邮箱");
+	executer["stu"]["create"]["student"].CreateSelfReferenceOption("--college", 1, "学院");
+	executer["stu"]["create"]["student"].CreateSelfReferenceOption("--permission", 1, "权限等级(0-4)，数值越低权限越高(必选)");
+	executer["stu"]["create"]["student"].CreateSelfReferenceOption("--notes", 1, "备注");
+
+	executer["stu"].CreateSubOption("list", 0, "列出数据信息",true);
+	executer["stu"]["list"].CreateSubOption("student", 0, "列出学生信息", true, [](const RbsLib::Command::CommandExecuter::Args& args) {
+		auto info = Account::AccountManager::GetAllStudentInfo();
+		for (const auto& it : info)
+		{
+			PrintStudentInfo(it);
+			Logger::LogInfo("=====================================");
+		}
+		});
+	executer["stu"]["list"]["student"].CreateSubOption("-id", 1, "指定要查看的ID", true, [](const RbsLib::Command::CommandExecuter::Args& args) {
+		if (args.find("-id") == args.end())
+		{
+			Logger::LogError("缺少参数,使用--help参数查看帮助");
+			return;
+		}
+		std::uint64_t id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(*args.at("-id").begin());
+		if (!Generator::IsStudentID(id)||!Account::AccountManager::IsStudentExist(id))
+		{
+			Logger::LogError("无效的学生ID");
+			return;
+		}
+		PrintStudentInfo(Account::AccountManager::GetStudentInfo(id));
+		});
+	executer["stu"]["list"].CreateSubOption("teacher", 0, "列出教师信息", true, [](const RbsLib::Command::CommandExecuter::Args& args) {
+		auto info = Account::AccountManager::GetAllTeacherInfo();
+		for (const auto& it : info)
+		{
+			PrintTeacherInfo(it);
+			Logger::LogInfo("=====================================");
+		}
+		});
+	executer["stu"]["list"]["teacher"].CreateSubOption("-id", 1, "指定要查看的ID", true, [](const RbsLib::Command::CommandExecuter::Args& args) {
+		if (args.find("-id") == args.end())
+		{
+			Logger::LogError("缺少参数,使用--help参数查看帮助");
+			return;
+		}
+		std::uint64_t id = RbsLib::String::Convert::StringToNumber<std::uint64_t>(*args.at("-id").begin());
+		if (!Generator::IsTeacherID(id) || !Account::AccountManager::IsTeacherExist(id))
+		{
+			Logger::LogError("无效的工号");
+			return;
+		}
+		PrintTeacherInfo(Account::AccountManager::GetTeacherInfo(id));
+		});
+	executer["stu"]["list"].CreateSubOption("class", 0, "列出班级信息", true, [](const RbsLib::Command::CommandExecuter::Args& args) {
+		auto info = Account::ClassesManager::GetAllClassInfo();
+		for (const auto& it : info)
+		{
+			Logger::LogInfo("班级名称: %s,班主任工号: %s", it.name.c_str(),std::to_string(it.teacher_id).c_str());
+		}
+		});
+	executer["stu"]["list"]["class"].CreateSubOption("-name", 1, "指定要查看的班级名称", true, [](const RbsLib::Command::CommandExecuter::Args& args) {
+		if (args.find("-name") == args.end())
+		{
+			Logger::LogError("缺少参数,使用--help参数查看帮助");
+			return;
+		}
+		std::string name = *args.at("-name").begin();
+		if (!Account::ClassesManager::IsClassExist(name))
+		{
+			Logger::LogError("班级不存在");
+			return;
+		}
+		auto info = Account::ClassesManager::GetClassInfo(name);
+		Logger::LogInfo("班级名称: %s,班主任工号: %s", info.name.c_str(), std::to_string(info.teacher_id).c_str());
+		for (const auto& it : info.students)
+		{
+			Logger::LogInfo("学生ID: %s", std::to_string(it).c_str());
+		}
 		});
 	executer.Execute(argc, argv);
-	/*
-	std::map<std::string, std::string> args;
-	
-	struct CmdTree {
-		std::map<std::string, std::pair<bool,CmdTree*>> children;
-		std::function<void(const std::map<std::string, std::string>&)> func;
-	};
-	std::list<CmdTree*> objs;
-	try
-	{
-		auto make_node = [&objs]() {
-			auto node = new CmdTree();
-			objs.push_back(node);
-			return node;
-			};
-		CmdTree* root = make_node(), * temp;
-		root->func = [](const std::map<std::string, std::string>& args) {
-			Logger::LogInfo("学生成绩管理系统模块");
-			};
-		//root表示根节点
-		root->children["stu"].first = false;
-		temp = root->children["stu"].second = make_node();
-		temp->func = [](const std::map<std::string, std::string>& args) {
-			Logger::LogInfo("学生成绩管理系统模块,使用参数--help获取帮助");
-			};
-		temp->children["--help"].first = false;
-		temp->children["--help"].second = make_node();
-		temp->children["--help"].second->func = [](const std::map<std::string, std::string>& args) {
-			Logger::LogInfo("学生成绩管理系统模块");
-			Logger::LogInfo("命令列表:");
-			Logger::LogInfo("stu create (teacher/student/class/subject)  创建学生或教师");
-			Logger::LogInfo("stu help  获取帮助");
-			};
-		temp->children["create"].first = false;
-		temp =temp->children["create"].second = make_node();
-		temp->children["teacher"].first = false;
-		temp = temp->children["teacher"].second = make_node();
-		temp->func = [](const std::map<std::string, std::string>& args) {
-			if (args.find("--name") == args.end() || args.find("--password") == args.end() || args.find("--permission") == args.end())
-			{
-				Logger::LogError("缺少参数,使用--help参数查看帮助");
-				return;
-			}
-			std::string name = args.at("--name");
-			std::string password = args.at("--password");
-			std::string permission = args.at("--permission");
-			std::string phone_number = args.find("--phone_number") == args.end() ? "" : args.at("--phone_number");
-			std::string email = args.find("--email") == args.end() ? "" : args.at("--email");
-			std::string notes = args.find("--notes") == args.end() ? "" : args.at("--notes");
-			std::string college = args.find("--college") == args.end() ? "" : args.at("--college");
-			std::string sex = args.find("--sex") == args.end() ? "" : args.at("--sex");
-			std::uint64_t teacher_id;
-			Account::AccountManager::CreateTeacher(teacher_id = Generator::TeacherIDGenerator(), name, phone_number, email, sex, college, password, notes, std::stoi(permission));
-			Logger::LogInfo("创建教师成功,工号为: %s",fmt::format("{}",teacher_id).c_str());
-			};
-		temp->children["--name"] = { true,temp };
-		temp->children["--password"] = { true,temp };
-		temp->children["--permission"] = { true,temp };
-		temp->children["--phone_number"] = { true,temp };
-		temp->children["--email"] = { true,temp };
-		temp->children["--notes"] = { true,temp };
-		temp->children["--college"] = { true,temp };
-		temp->children["--sex"] = { true,temp };
-		temp->children["--help"].first = false;
-		temp->children["--help"].second = make_node();
-		temp->children["--help"].second->func = [](const std::map<std::string, std::string>& args) {
-			Logger::LogInfo("创建教师");
-			Logger::LogInfo("参数列表:");
-			Logger::LogInfo("--name <name>  教师姓名");
-			Logger::LogInfo("--password <password>  密码");
-			Logger::LogInfo("--permission <permission>  权限等级");
-			Logger::LogInfo("--phone_number <phone_number>  电话号码");
-			Logger::LogInfo("--email <email>  邮箱");
-			Logger::LogInfo("--notes <notes>  备注");
-			Logger::LogInfo("--college <college>  学院");
-			};
-
-		//执行命令
-		temp = root;
-		for (int i = 0; i < argc; ++i)
-		{
-			auto& arg = argv[i];
-			if (temp->children.find(arg) == temp->children.end())
-			{
-				Logger::LogError("未知参数: \"%s\"", arg);
-				return;
-			}
-			auto& it = temp->children[arg];
-			if (it.first == false)
-			{
-				temp = it.second;
-			}
-			else
-			{
-				if (i + 1 >= argc)
-				{
-					Logger::LogError("参数\"%s\"缺少值", arg);
-					return;
-				}
-				args[arg] = argv[i + 1];
-				++i;
-			}
-		}
-		if (temp->func!=nullptr)
-			temp->func(args);
-		else
-		{
-			Logger::LogError("未知参数");
-		}
-	}
-	catch (...) {
-		for (auto& it : objs)
-		{
-			delete it;
-		}
-		throw;
-	}
-	for (auto& it : objs)
-	{
-		delete it;
-	}
-	*/
 }
 
 //初始化函数，用于模块自身的初始化，主要是描述模块名称版本函数等信息
@@ -1639,6 +1709,7 @@ ModuleSDK::ModuleInfo Init(void)
 	info.Add("delete_empty_class", DeleteEmptyClass);
 	info.Add("change_student_class", ChangeStudentClass);
 	info.Add("delete_student", DeleteStudent);
+	info.Add("delete_teacher", DeleteTeacher);
 
 	info.AddCommand("stu", CommandLine);
 

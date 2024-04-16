@@ -93,7 +93,7 @@ void Account::AccountManager::DeleteTeacher(std::uint64_t teacher_id)
 {
 	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
 	db.Exec(fmt::format("DELETE FROM teachers_subjects_relation WHERE TeacherID = {};", teacher_id));
-	db.Exec(fmt::format("DELETE FROM students WHERE ID = {};", teacher_id));
+	db.Exec(fmt::format("DELETE FROM teachers WHERE ID = {};", teacher_id));
 }
 
 auto Account::AccountManager::GetStudentInfo(std::uint64_t id)->StudentBasicInfo
