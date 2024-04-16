@@ -24,7 +24,7 @@ jobs:
         run: cmake --build ${{github.workspace}}/build --config Release
 
       - name: Pack tar
-        run: mkdir StudentGradeManager && cp -r ${{github.workspace}}/build/StudentGradeManager ${{github.workspace}}/build/app ${{github.workspace}}/LICENSE.txt StudentGradeManager/ &&rm StudentGradeManager/app/libtest_module.so && tar -czf StudentGradeManager.tar.gz StudentGradeManager
+        run: mkdir StudentGradeManager && cp -r ${{github.workspace}}/build/StudentGradeManager ${{github.workspace}}/build/html ${{github.workspace}}/build/app ${{github.workspace}}/LICENSE.txt StudentGradeManager/ &&rm StudentGradeManager/app/libtest_module.so && tar -czf StudentGradeManager.tar.gz StudentGradeManager
       
       - name: Release
         uses: softprops/action-gh-release@v1
