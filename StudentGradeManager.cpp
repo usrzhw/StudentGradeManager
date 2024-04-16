@@ -72,7 +72,6 @@ static void ExitProgram()
 {
 	Logger::LogInfo("正在退出服务器");
 	IsExitProgram = true;
-	fcloseall();
 	exit(0);
 }
 
@@ -148,11 +147,11 @@ static void BackgroundCommandThread(Module::ModuleManager* modules)
 			}
 			catch (const Module::ModuleLoaderException& ex)
 			{
-				Logger::LogError("模块加载器错误: %s", ex.what());
+				Logger::LogError("错误: %s", ex.what());
 			}
 			catch (const std::exception& ex)
 			{
-				Logger::LogError("未知错误: %s", ex.what());
+				Logger::LogError("错误: %s", ex.what());
 			}
 		}
 	}

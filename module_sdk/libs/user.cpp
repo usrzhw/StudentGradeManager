@@ -34,7 +34,7 @@ void Account::AccountManager::CreateStudent(
 	const std::string& notes, int permission_level)
 {
 	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
-	db.Exec(fmt::format("INSERT INTO students ('ID','Name','PhoneNumber','Email','Sex','EnrollmentDate','Password','CollegeName','ClassName','Notes','PermissionLevel') VALUES ({},'{}','{}','{}','{}','{}','{}','{}','{}','{}',{});", ID, name, phone_number, email, student_sex, enrollment_date, pass_word, college, class_name, notes, permission_level));
+	db.Exec(fmt::format("INSERT INTO students ('ID','Name','PhoneNumber','Email','Sex','EnrollmentDate','Password','CollegeName','ClassName','Notes','PermissionLevel','IsEnable') VALUES ({},'{}','{}','{}','{}','{}','{}','{}','{}','{}',{},{});", ID, name, phone_number, email, student_sex, enrollment_date, pass_word, college, class_name, notes, permission_level,1));
 }
 
 void Account::AccountManager::CreateTeacher(
@@ -48,7 +48,7 @@ void Account::AccountManager::CreateTeacher(
 {
 	
 	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
-	db.Exec(fmt::format("INSERT INTO teachers('ID','Name','PhoneNumber','Email','Sex','CollegeName','Password','Notes','PermissionLevel') VALUES ({},'{}','{}','{}','{}','{}','{}','{}',{});", ID, name, phone_number, email, teacher_sex, college, pass_word, notes, permission_level));
+	db.Exec(fmt::format("INSERT INTO teachers('ID','Name','PhoneNumber','Email','Sex','CollegeName','Password','Notes','PermissionLevel','IsEnable') VALUES ({},'{}','{}','{}','{}','{}','{}','{}',{},{});", ID, name, phone_number, email, teacher_sex, college, pass_word, notes, permission_level,1));
 }
 
 bool Account::AccountManager::IsStudentExist(std::uint64_t id)
@@ -93,7 +93,7 @@ void Account::AccountManager::DeleteTeacher(std::uint64_t teacher_id)
 {
 	auto db = DataBase::SQLite::Open(DATABASE_FILE_PATH);
 	db.Exec(fmt::format("DELETE FROM teachers_subjects_relation WHERE TeacherID = {};", teacher_id));
-	db.Exec(fmt::format("DELETE FROM students WHERE ID = {};", teacher_id));
+	db.Exec(fmt::format("DELETE FROM teachers WHERE ID = {};", teacher_id));
 }
 
 auto Account::AccountManager::GetStudentInfo(std::uint64_t id)->StudentBasicInfo
@@ -110,7 +110,7 @@ auto Account::AccountManager::GetStudentInfo(std::uint64_t id)->StudentBasicInfo
 	a.name = temp["Name"][0];
 	a.phone_number = temp["PhoneNumber"][0];
 	a.sex = temp["Sex"][0];
-	a.enrollment_date = temp["PermissionLevel"][0];
+	a.enrollment_date = temp["EnrollmentDate"][0];
 	a.notes = temp["Notes"][0];
 	a.college = temp["CollegeName"][0];
 	a.class_name = temp["ClassName"][0];
@@ -413,9 +413,9 @@ Account::SubjectInfo Account::SubjectManager::GetSubjectInfo(std::uint64_t subje
 	for (int j = 0; j < stu_num; ++j)
 	{
 		f.students.push_back(SubjectInfo::Student(
-			RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["StudentID"][0]),
-			RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["Grade"][0]),
-			temp["Notes"][0]));
+			RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["StudentID"][j]),
+			RbsLib::String::Convert::StringToNumber<std::uint64_t>(temp["Grade"][j]),
+			temp["Notes"][j]));
 	}
 	//获取课程中所有教师
 	temp = db.Exec(fmt::format("SELECT TeacherID FROM teachers_subjects_relation WHERE SubjectID={};", f.id));

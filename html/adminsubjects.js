@@ -232,11 +232,12 @@ async function CreateSubject() {
         name: document.getElementById("AClassName").value,
         class_room: document.getElementById("AClassRoom").value,
         description: document.getElementById("ADescription").value
-    })).catch(error => {
+    })).then(() => {
+        Close();
+        switch_to_subjects();
+    }).catch(error => {
         alert("创建课程失败:" + error.toString());
     });
-    Close();
-    switch_to_subjects();
 }
 
 function OpenAddStudentDialog() {

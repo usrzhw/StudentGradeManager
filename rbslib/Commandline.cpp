@@ -1,3 +1,5 @@
+ï»¿#include "Commandline.h"
+#include "Commandline.h"
 #include "Commandline.h"
 #include <exception>
 
@@ -7,29 +9,29 @@ bool CommandLine::Parse(const std::string& command)
 {
 	this->Clear();
 	std::string arg;
-	bool is_in = false;//±êÊ¶ÊÇ·ñÔÚÓĞĞ§½âÎö²¿·ÖÖĞ
-	bool q = false;//±êÊ¶ÊÇ·ñÔÚË«ÒıºÅÒıÆğµÄ²¿·ÖÖĞ
+	bool is_in = false;//æ ‡è¯†æ˜¯å¦åœ¨æœ‰æ•ˆè§£æéƒ¨åˆ†ä¸­
+	bool q = false;//æ ‡è¯†æ˜¯å¦åœ¨åŒå¼•å·å¼•èµ·çš„éƒ¨åˆ†ä¸­
 
 	for (auto it : command)
 	{
 		if (q == true)
 		{
-			//µ±Ç°ÔÚÒıºÅÖĞ
+			//å½“å‰åœ¨å¼•å·ä¸­
 			if (it == '\"')
 			{
-				//Àë¿ªÒıºÅÇøÓò
+				//ç¦»å¼€å¼•å·åŒºåŸŸ
 				q = false;
 			}
 			else arg.push_back(it);
 		}
 		else
 		{
-			//µ±Ç°²»ÔÚÒıºÅÖĞ
+			//å½“å‰ä¸åœ¨å¼•å·ä¸­
 			if (it == ' ')
 			{
 				if (is_in == true)
 				{
-					//ÖÕÖ¹ÓĞĞ§²¿·Ö½âÎö
+					//ç»ˆæ­¢æœ‰æ•ˆéƒ¨åˆ†è§£æ
 					is_in = false;
 					if (arg != "") args.push_back(arg);
 					arg.clear();
@@ -37,9 +39,9 @@ bool CommandLine::Parse(const std::string& command)
 			}
 			else
 			{
-				//½øÈëÓĞĞ§½âÎöÇøÓò
+				//è¿›å…¥æœ‰æ•ˆè§£æåŒºåŸŸ
 				is_in = true;
-				if (it == '\"') q = true;//½øÈëÒıºÅÇøÓò
+				if (it == '\"') q = true;//è¿›å…¥å¼•å·åŒºåŸŸ
 				else arg.push_back(it);
 			}
 		}
@@ -50,7 +52,7 @@ bool CommandLine::Parse(const std::string& command)
 
 CommandLine::CommandLine(int argc, const char** argv)
 {
-	if (argc>0)
+	if (argc > 0)
 	{
 		for (int i = 0; i < argc; ++i)
 		{
@@ -71,7 +73,7 @@ bool CommandLine::IsFlagExist(const std::string& flag)
 std::string CommandLine::GetNextToken(const std::string& flag) const
 {
 	auto it = std::find(this->args.begin(), this->args.end(), flag);
-	if (it != this->args.end()&&(++it)!=args.end())
+	if (it != this->args.end() && (++it) != args.end())
 	{
 		return *it;
 	}
@@ -101,4 +103,178 @@ void CommandLine::Clear()
 void CommandLine::Push(const std::string& arg)
 {
 	this->args.push_back(arg);
+}
+
+
+
+auto RbsLib::Command::CommandExecuter::operator[](const std::string& str) -> CommandNode&
+{
+	return root[str];
+}
+
+CommandExecuter::CommandExecuter()
+	:root(&this->nodes, &this->output_callback)
+{
+}
+
+auto RbsLib::Command::CommandExecuter::CreateSubOption(const std::string& option, int have_extra_arg, const std::string description, bool is_enable_auto_help, const std::function<void(const std::map<std::string, std::list<std::string>>&)>& func) -> CommandNode&
+{
+	return root.CreateSubOption(option, have_extra_arg, description, is_enable_auto_help, func);
+}
+
+RbsLib::Command::CommandExecuter::~CommandExecuter()
+{
+	for (auto it : this->nodes)
+	{
+		delete it;
+	}
+}
+
+void RbsLib::Command::CommandExecuter::Execute(int argc, const char** argv)
+{
+	try
+	{
+		CommandNode* ptr = &this->root;
+		bool is_need_run = true;
+		for (int i = 0; i < argc; ++i)
+		{
+			if (int extra_option_num = ptr->OptionNum(argv[i]))
+			{
+				if (extra_option_num == -2) is_need_run = false;
+				if (extra_option_num > 0)
+				{
+					ptr = &(*ptr)[argv[i]];
+					std::string option_name = argv[i];
+					if (i + extra_option_num >= argc) throw std::runtime_error("Missing parameters");
+					for (int j = 0; j < extra_option_num; ++j)
+					{
+						this->args[option_name].push_back(argv[++i]);
+					}
+				}
+				else if (extra_option_num == -1)
+				{
+					ptr = &(*ptr)[argv[i]];
+					std::string option_name = argv[i];
+					while (1)
+					{
+						try
+						{
+							if (++i >= argc) break;
+							if (-2 == (*ptr).OptionNum(argv[i]))
+							{
+								if (i + 1 != argc) throw 1;
+								(*ptr)[argv[i]];
+								is_need_run = false;
+								++i;
+								break;
+							}
+							--i;
+							break;
+						}
+						catch (const std::runtime_error&)
+						{
+							this->args[option_name].push_back(argv[i]);
+						}
+					}
+				}
+				else if (extra_option_num == -2)
+				{
+					if (i + 1 != argc) throw 1;
+					(*ptr)[argv[i]];
+					break;
+				}
+			}
+			else
+			{
+				ptr = &(*ptr)[argv[i]];
+			}
+
+		}
+		if (is_need_run)
+		{
+			if (ptr->IsFunctionExist())
+				ptr->operator()(this->args);
+			else throw std::runtime_error("è¯­æ³•é”™è¯¯ï¼Œä½¿ç”¨-hå‚æ•°è·å–å¸®åŠ©");
+		}
+	}
+	catch (int)
+	{
+		throw std::runtime_error("è¯­æ³•é”™è¯¯ï¼Œä½¿ç”¨-hå‚æ•°è·å–å¸®åŠ©");
+	}
+}
+
+void RbsLib::Command::CommandExecuter::SetOutputCallback(const std::function<void(const std::string& str)>& callback)
+{
+	this->output_callback = callback;
+}
+
+auto RbsLib::Command::CommandExecuter::CommandNode::operator[](const std::string& str)-> CommandNode&
+{
+	if (this->children.find(str) != this->children.end())
+	{
+		return *std::get<1>(this->children[str]);
+	}
+	else
+	{
+		//æ£€æŸ¥å½“å‰é€‰é¡¹æ˜¯å¦æ˜¯--helpæˆ–-hå¦‚æœæ˜¯åˆ™è¾“å‡ºå¸®åŠ©ä¿¡æ¯
+		if ((str == "--help" || str == "-h") && this->enable_auto_help)
+		{
+			(*(this->output_callback))("Options:");
+			for (const auto& it : this->children)
+			{
+				(*(this->output_callback))(it.first + " : " + std::get<2>(it.second));
+			}
+			return *this;
+		}
+		else throw std::runtime_error(std::string("No such option: ") + str);
+	}
+}
+
+void RbsLib::Command::CommandExecuter::CommandNode::operator()(const std::map<std::string, std::list<std::string>>& args)
+{
+	this->func(args);
+}
+
+void RbsLib::Command::CommandExecuter::CommandNode::SetFunction(const std::function<void(const std::map<std::string, std::list<std::string>>&)>& func)
+{
+	this->func = func;
+}
+
+auto CommandExecuter::CommandNode::CreateSubOption(const std::string& option, int have_extra_arg, const std::string description, bool is_enable_auto_help, const std::function<void(const std::map<std::string, std::list<std::string>>&)>& func) -> CommandNode&
+{
+	if (have_extra_arg < -1) throw std::runtime_error("Extra args number less than -1");
+	auto x = new CommandNode(this->nodes, this->output_callback);
+	this->nodes->push_back(x);
+	x->func = func;
+	this->children[option] = { have_extra_arg,x,description };
+	x->enable_auto_help = is_enable_auto_help;
+	return *x;
+}
+
+auto RbsLib::Command::CommandExecuter::CommandNode::CreateSelfReferenceOption(const std::string& option, int extra_args_num, const std::string& description) -> CommandNode&
+{
+	if (extra_args_num < -1) throw std::runtime_error("Extra args number less than -1");
+	this->children[option] = { extra_args_num,this,description };
+	return *this;
+}
+
+RbsLib::Command::CommandExecuter::CommandNode::CommandNode(std::list<CommandNode*>* nodes, const std::function<void(const std::string& str)>* callback)
+	:nodes(nodes), output_callback(callback)
+{
+}
+
+int RbsLib::Command::CommandExecuter::CommandNode::OptionNum(const std::string& option)
+{
+	if (this->children.find(option) == this->children.end())
+	{
+		if (this->enable_auto_help && (option == "-h" || option == "--help")) return -2;
+		else
+			throw std::runtime_error(std::string("No such option: ") + option);
+	}
+	return std::get<0>(this->children[option]);
+}
+
+bool RbsLib::Command::CommandExecuter::CommandNode::IsFunctionExist() const noexcept
+{
+	return static_cast<bool>(this->func);
 }

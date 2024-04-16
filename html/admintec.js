@@ -112,7 +112,14 @@ async function Makesure() {
         });
     }
     if (document.getElementById("EMailBox").value != opened_teacher_info.email) {
-        alert("邮箱暂不支持修改");
+        await RequestJson("/app/stu.change_email", JSON.stringify({
+            ID: localStorage.getItem("id"),
+            token: localStorage.getItem("token"),
+            target_id: teacher_id,
+            email: document.getElementById("EMailBox").value
+        })).catch(error => {
+            alert("修改邮箱失败:" + error.toString());
+        });
     }
     if (document.getElementById("CollegeBox").value != opened_teacher_info.college) {
         await RequestJson("/app/stu.change_college", JSON.stringify({
@@ -182,9 +189,24 @@ async function CreateStudent() {
         notes: document.getElementById("ANotesBox").value,
         permission_level: document.getElementById("APermissionLevelBox").value,
         password: document.getElementById("APasswordBox").value,
-    })).catch(error => {
+    })).then(() => {
+        Close();
+        ShowTeachersList();
+    }).catch(error => {
         alert("创建教师失败:" + error.toString());
     });
+}
+
+async function DeleteTeacher() {
+    if (window.confirm("确定删除该教师吗？")) {
+        await RequestJson("/app/stu.delete_teacher", JSON.stringify({
+            ID: localStorage.getItem("id"),
+            token: localStorage.getItem("token"),
+            target_id: opened_teacher_id
+        })).catch(error => {
+            alert("删除教师失败:" + error.toString());
+        });
+    }
     Close();
     ShowTeachersList();
 }

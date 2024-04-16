@@ -48,7 +48,7 @@ function search() {
     document.getElementById("subjects_from_body").innerHTML = "";
     for (var it of classes.subjects) {
         if (it.id == Number(document.getElementById("subject_name").value) ||
-            it.name == document.getElementById("subject_name").value||
+            -1 != it.name.indexOf(document.getElementById("subject_name").value)||
             document.getElementById("subject_name").value == "") {
             var teachers = "";
             for (var teacher of it.teachers) {

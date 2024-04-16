@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
     <meta charset="UTF-8">
@@ -82,7 +82,7 @@
                     mode: 'no-cors'
                 }).then(Response => {
                     if (Response.ok == false)
-                        throw new Error("网络错误");
+                        throw new Error("登录失败，请检查用户名和密码");
                     else {
                         return Response.json();
                     }
